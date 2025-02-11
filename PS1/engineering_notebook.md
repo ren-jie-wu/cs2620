@@ -48,24 +48,24 @@
 
 - [x] Determine the protocol definition
 - [x] Set up server-client socket communication
-- [] Implement account creation & login with secure password handling
-- [] Store user data and messages (initially in-memory, later in a database)
-- [] Implement message sending & retrieval
+- [x] Implement account creation & login with secure password handling
+- [ ] Store user data and messages (initially in-memory, later in a database)
+- [ ] Implement message sending & retrieval
 
 #### Phase 2: Enhancements
 
-- [] Implement wildcard search & pagination for listing accounts
-- [] Implement batch retrieval of messages
-- [] Implement deletion logic for messages & accounts
-- [] Introduce a database backend (SQLite or lightweight key-value store)
-- [] Improve concurrency with threading or async
+- [ ] Implement wildcard search & pagination for listing accounts
+- [ ] Implement batch retrieval of messages
+- [ ] Implement deletion logic for messages & accounts
+- [ ] Introduce a database backend (SQLite or lightweight key-value store)
+- [ ] Improve concurrency with threading or async
 
 #### Phase 3: Finalization
 
-- [] Build a basic GUI client
-- [] Implement configuration file support
-- [] Conduct comprehensive testing & documentation
-- [] Optimize code for future extensibility
+- [ ] Build a basic GUI client
+- [ ] Implement configuration file support
+- [ ] Conduct comprehensive testing & documentation
+- [ ] Optimize code for future extensibility
 
 
 ## Development Steps
@@ -285,6 +285,7 @@ python client.py
 Expected output on the server:
 ```
 [SERVER STARTED] Listening on 127.0.0.1:54400
+
 [NEW CONNECTION] ('127.0.0.1', 53578) connected.
 [REQUEST FROM ('127.0.0.1', 53578)] {'action': 'ping', 'data': {}}
 ```
@@ -293,3 +294,32 @@ Expected output on the client:
 [SERVER RESPONSE] {'action': 'ping', 'status': 'success', 'message': 'Pong!'}
 ```
 If we have multiple client running at the same time, the requests can be concurrently (well, at least it looks like so when using `time.sleep` to simulate processing) processed since multi-threading is used.
+
+### 3. Update Server with User Authentication
+
+#### Key Additions
+- [x] Account Creation: Store username-password pairs securely.
+- [x] Login Handling: Authenticate users correctly.
+- [x] Basic In-Memory User Store (to be replaced with persistent storage later).
+
+#### Testing
+Run the server in one terminal:
+``` sh
+python server.py
+```
+
+Run the client in another terminal:
+``` sh
+python client.py
+```
+
+Expected Output on the client:
+```
+[SERVER RESPONSE] {'action': 'create_account', 'status': 'error', 'error': 'Missing username or password'}
+[SERVER RESPONSE] {'action': 'create_account', 'status': 'error', 'error': 'Missing username or password'}
+[SERVER RESPONSE] {'action': 'create_account', 'status': 'success', 'message': 'Account created successfully'}
+[SERVER RESPONSE] {'action': 'create_account', 'status': 'error', 'error': 'Username already exists'}
+[SERVER RESPONSE] {'action': 'login', 'status': 'error', 'error': 'Incorrect password'}
+[SERVER RESPONSE] {'action': 'login', 'status': 'success', 'message': 'Login successful'}
+```
+

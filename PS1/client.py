@@ -5,7 +5,7 @@ HOST = "127.0.0.1"
 PORT = 54400
 
 def send_request(action, data=None):
-    """Sends a JSON request to the server and prints the response."""
+    """Sends a request to the server and prints the response."""
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client.connect((HOST, PORT))
 
@@ -18,4 +18,12 @@ def send_request(action, data=None):
     client.close()
 
 if __name__ == "__main__":
-    send_request("ping")
+    # Test account creation
+    send_request("create_account", {"username": "test_user", "password": ""}) # Empty password
+    send_request("create_account", {"password": "secure123"}) # Missing username
+    send_request("create_account", {"username": "test_user", "password": "secure123"})
+    send_request("create_account", {"username": "test_user", "password": "hello123"}) # Existing username
+    
+    # Test login
+    send_request("login", {"username": "test_user", "password": "hello123"}) # Incorrect password
+    send_request("login", {"username": "test_user", "password": "secure123"})
