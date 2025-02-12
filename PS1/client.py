@@ -100,7 +100,7 @@ def test_list_accounts():
     # 3. List accounts with pattern "a*"
     send_request("list_accounts", {"session_token": andy_response["data"]["session_token"], "pattern": "a*", "page": 1, "page_size": 5})
 
-def test_delete_message():
+def test_delete_messages():
     send_request("create_account", {"username": "alice", "password": "1234"})
     send_request("create_account", {"username": "bob", "password": "5678"})
 
@@ -110,11 +110,11 @@ def test_delete_message():
     send_request("send_message", {"session_token": alice_response["data"]["session_token"], "recipient": "bob", "message": "The second day missing bob."})
 
     # 2. Someone tries to delete messages without a valid session token
-    send_request("delete_message", {"username": "bob", "num_to_delete": 1})
+    send_request("delete_messages", {"username": "bob", "num_to_delete": 1})
 
     # 3. bob logs in and deletes one of his messages and reads the other
     bob_response, _ = send_request("login", {"username": "bob", "password": "5678"})
-    send_request("delete_message", {"session_token": bob_response["data"]["session_token"], "num_to_delete": 1})
+    send_request("delete_messages", {"session_token": bob_response["data"]["session_token"], "num_to_delete": 1})
     send_request("read_messages", {"session_token": bob_response["data"]["session_token"]})
 
 def test_delete_account():
@@ -152,5 +152,5 @@ if __name__ == "__main__":
     # test_list_accounts()
 
     # step 6 testing
-    test_delete_message()
+    test_delete_messages()
     test_delete_account()

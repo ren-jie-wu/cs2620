@@ -228,7 +228,7 @@ Response
 Request
 ``` json
 {
-  "action": "delete_message",
+  "action": "delete_messages",
   "data": {
     "username": "Bob",
     "message_id": "12345"
@@ -238,7 +238,7 @@ Request
 Response
 ``` json
 {
-  "action": "delete_message",
+  "action": "delete_messages",
   "status": "success"
 }
 ```
@@ -612,7 +612,7 @@ Expected Output on the server:
 [DISCONNECTED] ('127.0.0.1', 57468) disconnected.
 
 [NEW CONNECTION] ('127.0.0.1', 57469) connected.
-[REQUEST FROM ('127.0.0.1', 57469)] {'action': 'delete_message', 'data': {'username': 'bob', 'num_to_delete': 1}}
+[REQUEST FROM ('127.0.0.1', 57469)] {'action': 'delete_messages', 'data': {'username': 'bob', 'num_to_delete': 1}}
 
 [DISCONNECTED] ('127.0.0.1', 57469) disconnected.
 
@@ -622,7 +622,7 @@ Expected Output on the server:
 [DISCONNECTED] ('127.0.0.1', 57466) disconnected.
 
 [NEW CONNECTION] ('127.0.0.1', 57471) connected.
-[REQUEST FROM ('127.0.0.1', 57471)] {'action': 'delete_message', 'data': {'session_token': 'c464ea82-d67e-4f51-a385-1b72c747a8f2', 'num_to_delete': 1}}
+[REQUEST FROM ('127.0.0.1', 57471)] {'action': 'delete_messages', 'data': {'session_token': 'c464ea82-d67e-4f51-a385-1b72c747a8f2', 'num_to_delete': 1}}
 
 [DISCONNECTED] ('127.0.0.1', 57471) disconnected.
 
@@ -686,11 +686,11 @@ Expected Output on the client:
 
 [SERVER RESPONSE TO ('127.0.0.1', 57468)] {'action': 'send_message', 'status': 'success'}
 
-[SERVER RESPONSE TO ('127.0.0.1', 57469)] {'action': 'delete_message', 'status': 'error', 'error': 'Invalid session'}
+[SERVER RESPONSE TO ('127.0.0.1', 57469)] {'action': 'delete_messages', 'status': 'error', 'error': 'Invalid session'}
 
 [SERVER RESPONSE TO ('127.0.0.1', 57470)] {'action': 'login', 'status': 'success', 'data': {'session_token': 'c464ea82-d67e-4f51-a385-1b72c747a8f2', 'unread_message_count': 2}}
 
-[SERVER RESPONSE TO ('127.0.0.1', 57471)] {'action': 'delete_message', 'status': 'success', 'data': {'num_messages_deleted': 1}}
+[SERVER RESPONSE TO ('127.0.0.1', 57471)] {'action': 'delete_messages', 'status': 'success', 'data': {'num_messages_deleted': 1}}
 
 [SERVER RESPONSE TO ('127.0.0.1', 57472)] {'action': 'read_messages', 'status': 'success', 'data': {'unread_messages': [{'from': 'alice', 'message': 'The second day missing bob.'}], 'remaining_unread_count': 0}}
 
@@ -712,6 +712,7 @@ Expected Output on the client:
 ```
 
 ### Next Steps:
+0. Background thread to listen the delivered messages
 1. GUI
 2. Test coverage
 3. Second Protocol

@@ -13,9 +13,9 @@ def generate_token():
 
 # Server Configuration
 HOST = "127.0.0.1"
-PORT = 54400
-CLEAN_SESSION_INTERVAL = 1
-TOKEN_EXPIRY_TIME = 5
+PORT = 64400
+CLEAN_SESSION_INTERVAL = 60
+TOKEN_EXPIRY_TIME = 3000
 
 # Server State (in-memory storage)
 users = {}  # Stores {username: password_hash}
