@@ -3,13 +3,7 @@ import threading
 import json
 import time  # noqa: F401
 import fnmatch
-from utils import hash_password, generate_token, cleanup_expired_sessions, HOST, PORT, TOKEN_EXPIRY_TIME
-
-# Server State (in-memory storage)
-users = {}  # Stores {username: password_hash}
-messages = {}  # Stores {recipient: [unread_message1, unread_message2, ...]}
-clients = {}  # Stores {logged_in_username: client_socket}
-sessions = {}  # Stores {session_token: {username, expiry_time}}
+from utils import hash_password, generate_token, cleanup_expired_sessions, HOST, PORT, TOKEN_EXPIRY_TIME, users, messages, clients, sessions
 
 def handle_client(client_socket, address):
     """Handles communication with a single client."""
@@ -63,9 +57,11 @@ def process_request(request, client_socket):
         if users[username] != hash_password(password):
             return {"action": "login", "status": "error", "error": "Incorrect password"}
         
-        clients[username] = client_socket
         session_token = generate_token()
         sessions[session_token] = {"username": username, "expiry_time": time.time() + TOKEN_EXPIRY_TIME}
+        if username not in clients:
+            clients[username] = {}
+        clients[username][session_token] = client_socket
         unread_count = len(messages.get(username, []))
         return {"action": "login", "status": "success", "data": {"session_token": session_token, "unread_message_count": unread_count}}
     
@@ -107,8 +103,10 @@ def process_request(request, client_socket):
         if recipient not in users:
             return {"action": "send_message", "status": "error", "error": "Recipient does not exist"}
 
-        if recipient in clients and clients[recipient].fileno() != -1:  # Check if recipient is online
-            clients[recipient].send(json.dumps({"action": "receive_message", "data": {"sender": sender, "message": message}}).encode("utf-8"))
+        if recipient in clients:  # Check if recipient is online
+            for recipient_socket in clients[recipient].values():
+                if recipient_socket.fileno() != -1:  # Check if recipient is online
+                    recipient_socket.send(json.dumps({"action": "receive_message", "data": {"sender": sender, "message": message}}).encode("utf-8"))
         else:
             messages[recipient].append({"from": sender, "message": message})  # Store if offline
 
@@ -133,8 +131,45 @@ def process_request(request, client_socket):
         else:
             user_messages = messages.get(username, [])[-num_to_read:]
             messages[username] = messages.get(username, [])[:-num_to_read]  # Remove read messages
-        return {"action": "read_messages", "status": "success", "data": {"unread_messages": user_messages}}
+        return {"action": "read_messages", "status": "success", "data": {"unread_messages": user_messages, "remaining_unread_count": len(messages.get(username, []))}}
     
+    elif action == "delete_message":
+        session_token = data.get("session_token")
+        username = sessions.get(session_token, {}).get("username")  # Validate session token
+
+        if not username:
+            return {"action": "delete_message", "status": "error", "error": "Invalid session"}
+        
+        num_to_delete = data.get("num_to_delete")
+        try:
+            num_to_delete = int(num_to_delete)
+        except Exception:
+            return {"action": "delete_message", "status": "error", "error": "Invalid number of messages to delete"}
+
+        num_to_read = len(messages.get(username, []))
+        if num_to_delete >= 0:  # Delete from the earliest message
+            messages[username] = messages.get(username, [])[num_to_delete:]
+        else:  # Delete from the latest message
+            messages[username] = messages.get(username, [])[:num_to_delete]
+        
+        return {"action": "delete_message", "status": "success", "data": {"num_messages_deleted": num_to_read - len(messages.get(username, []))}}
+
+    elif action == "delete_account":
+        session_token = data.get("session_token")
+        username = sessions.get(session_token, {}).get("username")  # Validate session token
+
+        if not username:
+            return {"action": "delete_account", "status": "error", "error": "Invalid session"}
+
+        # Delete all session tokens, close all sockets, and remove all data associated with the user
+        for session_token, login_socket in clients[username].items():
+            del sessions[session_token]
+            login_socket.close()
+        del clients[username]
+        del users[username]
+        del messages[username]
+        return {"action": "delete_account", "status": "success"}
+
     elif action == "logout":
         session_token = data.get("session_token")
         username = sessions.get(session_token, {}).get("username")  # Validate session token
@@ -142,8 +177,9 @@ def process_request(request, client_socket):
         if not username:
             return {"action": "logout", "status": "error", "error": "Invalid session"}
 
-        clients[username].close()
-        del clients[username]
+        # Delete session token and close socket for this session
+        clients[username][session_token].close()
+        del clients[username][session_token]
         del sessions[session_token]
         return {"action": "logout", "status": "success"}
     
@@ -167,7 +203,7 @@ def start_server():
     return
 
 if __name__ == "__main__":
-    threading.Thread(target=cleanup_expired_sessions, args=(sessions, clients), daemon=True).start()
+    threading.Thread(target=cleanup_expired_sessions, daemon=True).start()
     start_server()
 
 # TODO list: 

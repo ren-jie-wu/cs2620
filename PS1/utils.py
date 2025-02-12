@@ -1,6 +1,6 @@
 import hashlib
 import uuid
-import sqlite3
+import sqlite3  # noqa: F401
 import time
 
 def hash_password(password):
@@ -17,15 +17,23 @@ PORT = 54400
 CLEAN_SESSION_INTERVAL = 1
 TOKEN_EXPIRY_TIME = 5
 
-def cleanup_expired_sessions(sessions, clients):
+# Server State (in-memory storage)
+users = {}  # Stores {username: password_hash}
+messages = {}  # Stores {recipient: [unread_message1, unread_message2, ...]}
+clients = {}  # Stores {logged_in_username: {session_token1: client_socket1, ...}} # one user can have multiple socket connections
+sessions = {}  # Stores {session_token: {username, expiry_time}} # though one session token can only be associated with one username, one username can have multiple session tokens
+
+def cleanup_expired_sessions():
     try:
         while True:
             current_time = time.time()
             for session_token, session_data in list(sessions.items()):
                 if current_time > session_data["expiry_time"]:
                     del sessions[session_token]
-                    clients[session_data["username"]].close()
-                    del clients[session_data["username"]]
+                    socket = clients.get(session_data["username"], {}).get(session_token)
+                    if socket:
+                        socket.close()
+                        del clients[session_data["username"]][session_token]
             time.sleep(CLEAN_SESSION_INTERVAL)
     except KeyboardInterrupt:
         return

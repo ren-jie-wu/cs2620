@@ -54,9 +54,9 @@
 
 #### Phase 2: Enhancements
 
-- [ ] Implement wildcard search & pagination for listing accounts
+- [x] Implement wildcard search & pagination for listing accounts
 - [x] Implement batch retrieval of messages
-- [ ] Implement deletion logic for messages & accounts
+- [x] Implement deletion logic for messages & accounts
 - [ ] Introduce a database backend (SQLite or lightweight key-value store, however it could not be able to support concurrency)
 - [x] Improve concurrency with threading or async
 
@@ -330,7 +330,7 @@ Expected Output on the client:
 #### Key Additions
 - [x] Send a message to an online or offline user.
 - [x] Store undelivered messages until the recipient logs in.
-- [x] Retrieve messages when the user requests them, with number of messages designated by the user (positive number ~ reading from latest; negative number ~ reading from earliest)
+- [x] Retrieve messages when the user requests them, with number of messages designated by the user *(positive number ~ reading from latest; negative number ~ reading from earliest)*
 - [x] Maintain a session list to validate if a request is coming from a logged-in user
 - [x] Add session token expiry with a background thread cleaning-up tokens to improve security.
 
@@ -557,3 +557,165 @@ Expected Output on the client:
 [SERVER RESPONSE] {'action': 'list_accounts', 'status': 'success', 'data': {'accounts': ['Andrew', 'alex', 'andy', 'bob'], 'page': 1, 'total_pages': 1}}
 ```
 
+### 6. Message Deletion and Account Deletion
+
+#### Specification
+
+- This chat system is designed for immediately reading messages rather than browsing over and over again. Once the message is read it will no longer exist in any place in the system, except in the client's brain. There is neither chat history designed to record everything having happened. Therefore, the only message records that can be manipulated are **unread** messages.
+- The user can (and must, to avoid unintentional deletion) specify the number `n` of messages to delete, in a 'FIFO' manner. That is, the earliest `n` messages will be deleted, since the user may be overwhelmed with too many unread messages otherwise, and typically would prefer to read from the latest ones and ignore the earliest ones.
+- If an account is deleted, their unread messages also need not storing and should be deleted, for the sake of memory saving.
+
+#### Key Features
+- [x] Deleted top `n` earliest unread messages with authentication
+- [x] Delete account and its unread messages stored in the server with authentication
+- [x] Remove user session and close their connection just as logging out when deleting account
+- [ ] (Patch) There could be multiple sessions and connections associated with the same user. All of them need deleting.
+
+#### Testing
+
+#### Testing
+Run the server in one terminal:
+``` sh
+python server.py
+```
+
+Run the client in another terminal:
+``` sh
+python client.py
+```
+
+Expected Output on the server:
+```
+[SERVER STARTED] Listening on 127.0.0.1:54400
+
+[NEW CONNECTION] ('127.0.0.1', 57464) connected.
+[REQUEST FROM ('127.0.0.1', 57464)] {'action': 'create_account', 'data': {'username': 'alice', 'password': '1234'}}
+
+[DISCONNECTED] ('127.0.0.1', 57464) disconnected.
+
+[NEW CONNECTION] ('127.0.0.1', 57465) connected.
+[REQUEST FROM ('127.0.0.1', 57465)] {'action': 'create_account', 'data': {'username': 'bob', 'password': '5678'}}
+
+[DISCONNECTED] ('127.0.0.1', 57465) disconnected.
+
+[NEW CONNECTION] ('127.0.0.1', 57466) connected.
+[REQUEST FROM ('127.0.0.1', 57466)] {'action': 'login', 'data': {'username': 'alice', 'password': '1234'}}
+
+[NEW CONNECTION] ('127.0.0.1', 57467) connected.
+[REQUEST FROM ('127.0.0.1', 57467)] {'action': 'send_message', 'data': {'session_token': 'd168f64c-4283-4a56-a17b-9d0c2ce5aac2', 'recipient': 'bob', 'message': 'The first day missing bob.'}}
+
+[DISCONNECTED] ('127.0.0.1', 57467) disconnected.
+
+[NEW CONNECTION] ('127.0.0.1', 57468) connected.
+[REQUEST FROM ('127.0.0.1', 57468)] {'action': 'send_message', 'data': {'session_token': 'd168f64c-4283-4a56-a17b-9d0c2ce5aac2', 'recipient': 'bob', 'message': 'The second day missing bob.'}}
+
+[DISCONNECTED] ('127.0.0.1', 57468) disconnected.
+
+[NEW CONNECTION] ('127.0.0.1', 57469) connected.
+[REQUEST FROM ('127.0.0.1', 57469)] {'action': 'delete_message', 'data': {'username': 'bob', 'num_to_delete': 1}}
+
+[DISCONNECTED] ('127.0.0.1', 57469) disconnected.
+
+[NEW CONNECTION] ('127.0.0.1', 57470) connected.
+[REQUEST FROM ('127.0.0.1', 57470)] {'action': 'login', 'data': {'username': 'bob', 'password': '5678'}}
+
+[DISCONNECTED] ('127.0.0.1', 57466) disconnected.
+
+[NEW CONNECTION] ('127.0.0.1', 57471) connected.
+[REQUEST FROM ('127.0.0.1', 57471)] {'action': 'delete_message', 'data': {'session_token': 'c464ea82-d67e-4f51-a385-1b72c747a8f2', 'num_to_delete': 1}}
+
+[DISCONNECTED] ('127.0.0.1', 57471) disconnected.
+
+[NEW CONNECTION] ('127.0.0.1', 57472) connected.
+[REQUEST FROM ('127.0.0.1', 57472)] {'action': 'read_messages', 'data': {'session_token': 'c464ea82-d67e-4f51-a385-1b72c747a8f2'}}
+
+[DISCONNECTED] ('127.0.0.1', 57472) disconnected.
+
+[DISCONNECTED] ('127.0.0.1', 57470) disconnected.
+
+[NEW CONNECTION] ('127.0.0.1', 57473) connected.
+[REQUEST FROM ('127.0.0.1', 57473)] {'action': 'create_account', 'data': {'username': 'alice', 'password': '1234'}}
+
+[DISCONNECTED] ('127.0.0.1', 57473) disconnected.
+
+[NEW CONNECTION] ('127.0.0.1', 57474) connected.
+[REQUEST FROM ('127.0.0.1', 57474)] {'action': 'create_account', 'data': {'username': 'bob', 'password': '5678'}}
+
+[DISCONNECTED] ('127.0.0.1', 57474) disconnected.
+
+[NEW CONNECTION] ('127.0.0.1', 57475) connected.
+[REQUEST FROM ('127.0.0.1', 57475)] {'action': 'login', 'data': {'username': 'bob', 'password': '5678'}}
+
+[NEW CONNECTION] ('127.0.0.1', 57476) connected.
+[REQUEST FROM ('127.0.0.1', 57476)] {'action': 'list_accounts', 'data': {'session_token': '1b7ffa8b-572f-4068-92b9-454d931e326c'}}
+
+[DISCONNECTED] ('127.0.0.1', 57476) disconnected.
+
+[NEW CONNECTION] ('127.0.0.1', 57477) connected.
+[REQUEST FROM ('127.0.0.1', 57477)] {'action': 'delete_account', 'data': {'username': 'alice'}}
+
+[DISCONNECTED] ('127.0.0.1', 57477) disconnected.
+
+[NEW CONNECTION] ('127.0.0.1', 57478) connected.
+[REQUEST FROM ('127.0.0.1', 57478)] {'action': 'login', 'data': {'username': 'alice', 'password': '1234'}}
+
+[DISCONNECTED] ('127.0.0.1', 57475) disconnected.
+
+[NEW CONNECTION] ('127.0.0.1', 57479) connected.
+[REQUEST FROM ('127.0.0.1', 57479)] {'action': 'delete_account', 'data': {'session_token': 'c5c6a6c4-73c2-466e-8125-69e2a8c2c79b'}}
+
+[DISCONNECTED] ('127.0.0.1', 57478) disconnected.
+
+[DISCONNECTED] ('127.0.0.1', 57479) disconnected.
+
+[NEW CONNECTION] ('127.0.0.1', 57480) connected.
+[REQUEST FROM ('127.0.0.1', 57480)] {'action': 'list_accounts', 'data': {'session_token': '1b7ffa8b-572f-4068-92b9-454d931e326c'}}
+
+[DISCONNECTED] ('127.0.0.1', 57480) disconnected.
+```
+
+Expected Output on the client:
+```
+[SERVER RESPONSE TO ('127.0.0.1', 57464)] {'action': 'create_account', 'status': 'success'}
+
+[SERVER RESPONSE TO ('127.0.0.1', 57465)] {'action': 'create_account', 'status': 'success'}
+
+[SERVER RESPONSE TO ('127.0.0.1', 57466)] {'action': 'login', 'status': 'success', 'data': {'session_token': 'd168f64c-4283-4a56-a17b-9d0c2ce5aac2', 'unread_message_count': 0}}
+
+[SERVER RESPONSE TO ('127.0.0.1', 57467)] {'action': 'send_message', 'status': 'success'}
+
+[SERVER RESPONSE TO ('127.0.0.1', 57468)] {'action': 'send_message', 'status': 'success'}
+
+[SERVER RESPONSE TO ('127.0.0.1', 57469)] {'action': 'delete_message', 'status': 'error', 'error': 'Invalid session'}
+
+[SERVER RESPONSE TO ('127.0.0.1', 57470)] {'action': 'login', 'status': 'success', 'data': {'session_token': 'c464ea82-d67e-4f51-a385-1b72c747a8f2', 'unread_message_count': 2}}
+
+[SERVER RESPONSE TO ('127.0.0.1', 57471)] {'action': 'delete_message', 'status': 'success', 'data': {'num_messages_deleted': 1}}
+
+[SERVER RESPONSE TO ('127.0.0.1', 57472)] {'action': 'read_messages', 'status': 'success', 'data': {'unread_messages': [{'from': 'alice', 'message': 'The second day missing bob.'}], 'remaining_unread_count': 0}}
+
+[SERVER RESPONSE TO ('127.0.0.1', 57473)] {'action': 'create_account', 'status': 'error', 'error': 'Username already exists'}
+
+[SERVER RESPONSE TO ('127.0.0.1', 57474)] {'action': 'create_account', 'status': 'error', 'error': 'Username already exists'}
+
+[SERVER RESPONSE TO ('127.0.0.1', 57475)] {'action': 'login', 'status': 'success', 'data': {'session_token': '1b7ffa8b-572f-4068-92b9-454d931e326c', 'unread_message_count': 0}}
+
+[SERVER RESPONSE TO ('127.0.0.1', 57476)] {'action': 'list_accounts', 'status': 'success', 'data': {'accounts': ['alice', 'bob'], 'page': 1, 'total_pages': 1}}
+
+[SERVER RESPONSE TO ('127.0.0.1', 57477)] {'action': 'delete_account', 'status': 'error', 'error': 'Invalid session'}
+
+[SERVER RESPONSE TO ('127.0.0.1', 57478)] {'action': 'login', 'status': 'success', 'data': {'session_token': 'c5c6a6c4-73c2-466e-8125-69e2a8c2c79b', 'unread_message_count': 0}}
+
+[SERVER RESPONSE TO ('127.0.0.1', 57479)] {'action': 'delete_account', 'status': 'success'}
+
+[SERVER RESPONSE TO ('127.0.0.1', 57480)] {'action': 'list_accounts', 'status': 'success', 'data': {'accounts': ['bob'], 'page': 1, 'total_pages': 1}}
+```
+
+### Next Steps:
+1. GUI
+2. Test coverage
+3. Second Protocol
+4. Analysis of the two protocols (efficiency, scalability)
+5. Documentation of the two protocols
+
+- "Connection information may be specified as either a command-line option or in a configuration file."
