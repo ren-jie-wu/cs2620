@@ -62,7 +62,7 @@
 
 #### Phase 3: Finalization
 
-- [ ] Build a basic GUI client
+- [x] Build a basic GUI client
 - [ ] Change the JSON wire protocol to an optimized one
 - [ ] Implement configuration file support
 - [ ] Conduct comprehensive testing & documentation
@@ -336,7 +336,7 @@ Expected Output on the client:
 
 #### Issues
 - [x] In the line `data = client_socket.recv(1024).decode("utf-8")`, the server seems not to keep waiting for the requests from client; rather it just goes to the break statement and disconnect the client. This will prevent from sending a message to the recipient immediately if online, since the connection does not exist anymore. [Solved: This is actually because the socket object in the client side is dead outside of the function. The solution is to maintain that object]
-- [ ] Even if the above issue is solved, or say the server has the connection to send messages to the recipient, the recipient does not keep receiving messages from the server to display. [For now let's just manually fetch the message; later it will be changed into multi-threading.]
+- [x] Even if the above issue is solved, or say the server has the connection to send messages to the recipient, the recipient does not keep receiving messages from the server to display. [Currently manually fetch the message has been changed to a background thread constantly listening to the server]
 
 #### Testing
 Run the server in one terminal:
@@ -569,7 +569,7 @@ Expected Output on the client:
 - [x] Deleted top `n` earliest unread messages with authentication
 - [x] Delete account and its unread messages stored in the server with authentication
 - [x] Remove user session and close their connection just as logging out when deleting account
-- [ ] (Patch) There could be multiple sessions and connections associated with the same user. All of them need deleting.
+- [x] (Patch) There could be multiple sessions and connections associated with the same user. All of them need deleting.
 
 #### Testing
 
@@ -711,12 +711,36 @@ Expected Output on the client:
 [SERVER RESPONSE TO ('127.0.0.1', 57480)] {'action': 'list_accounts', 'status': 'success', 'data': {'accounts': ['bob'], 'page': 1, 'total_pages': 1}}
 ```
 
-### Next Steps:
-0. Background thread to listen the delivered messages
-1. GUI
-2. Test coverage
-3. Second Protocol
-4. Analysis of the two protocols (efficiency, scalability)
-5. Documentation of the two protocols
+### * Patch: Addition of a Background Thread to Listen to the Delivered Messages
 
-- "Connection information may be specified as either a command-line option or in a configuration file."
+This is implemented through a `ChatClient.listen_for_messages` function in the `gui.py`. The function check the `self.running` status, which will be open when logging-in and closed when logging-out or account deleting. If it should be running, it will constantly listening to the server and print the received messages in the chat display box.
+
+### 7. GUI
+
+#### Key Features
+
+- [x] Login & Account Creation Screen
+- [x] Main Chat Window with Chat Display
+  - [x] Accounts Listing UI
+  - [x] Message Sending UI
+  - [x] Message Reading UI
+  - [x] Message Deleting UI
+  - [x] Account Deleting UI
+  - [x] Logout UI
+- [ ] Polishing UI Layout
+
+### 8. Restructuring the Codes as a Better Design
+
+#### Space for Improvement
+- [ ] Modularization & Encapsulation – Move each functionality into separate classes/modules.
+- [ ] Better Request Handling – Decouple request processing from network handling.
+- [ ] Abstract Protocol Layer – Allow easy switching from JSON to other wiring protocol.
+- [ ] Thread Safety & Scalability – Improve handling of concurrent clients.
+- [ ] Persistence Support – Abstract storage handling for easy migration to a database.
+
+### Next Steps:
+- [ ] Test coverage
+- [ ] Second Protocol
+- [ ] Analysis of the two protocols (efficiency, scalability)
+- [ ] Documentation of the two protocols
+- [ ] Configuration files ("Connection information may be specified as either a command-line option or in a configuration file.")

@@ -33,7 +33,7 @@ class ChatClient:
         tk.Button(self.root, text="Log In", command=self.login).pack()
         tk.Button(self.root, text="Create Account", command=self.create_account).pack()
 
-    def build_chat_screen(self):
+    def build_chat_screen(self):  #TODO: Design a better UI
         """Create the main chat UI after login."""
         for widget in self.root.winfo_children():
             widget.destroy()
@@ -47,6 +47,7 @@ class ChatClient:
         tk.Button(self.root, text="Send", command=self.send_message).pack()
         tk.Button(self.root, text="View Unread Messages", command=self.read_messages).pack()
         tk.Button(self.root, text="Delete Unread Messages", command=self.delete_messages).pack()
+        tk.Button(self.root, text="List Accounts", command=self.list_accounts).pack()
         tk.Button(self.root, text="Delete Account", command=self.delete_account).pack()
         tk.Button(self.root, text="Log Out", command=self.logout).pack()
 
@@ -103,6 +104,47 @@ class ChatClient:
             self.build_chat_screen()
         else:
             messagebox.showerror("Error", response.get("error"))
+
+    def list_accounts(self):
+        """Prompt user for search pattern and display paginated list of accounts."""
+        pattern = simpledialog.askstring("List Accounts", "Enter search pattern (* for all):", initialvalue="*")
+        
+        if pattern is not None:
+            self.account_search_pattern = pattern
+            self.account_page = 1  # Reset to first page
+            self.fetch_accounts()
+
+    def fetch_accounts(self):
+        """Fetch and display a page of account listings."""
+        response = self.send_request("list_accounts", {"session_token": self.session_token, 
+                                                       "pattern": self.account_search_pattern, 
+                                                       "page": self.account_page, "page_size": 10})  #TODO: allow user to configure for once
+
+        if response["status"] == "success":
+            accounts = response["data"]["accounts"]
+            page = response["data"]["page"]
+            total_pages = response["data"]["total_pages"]
+
+            result_text = f"Page {page}/{total_pages}\n" + "\n".join(accounts) if accounts else "No accounts found."
+
+            account_window = tk.Toplevel(self.root)
+            account_window.title("Account List")
+
+            tk.Label(account_window, text=result_text, justify=tk.LEFT).pack()
+
+            # Pagination Controls
+            if page > 1:
+                tk.Button(account_window, text="Previous", command=lambda: self.change_account_page(-1, account_window)).pack(side=tk.LEFT)
+            if page < total_pages:
+                tk.Button(account_window, text="Next", command=lambda: self.change_account_page(1, account_window)).pack(side=tk.RIGHT)
+        else:
+            messagebox.showerror("Error", response["error"])
+
+    def change_account_page(self, direction, window):
+        """Navigate through paginated account results."""
+        self.account_page += direction
+        window.destroy()
+        self.fetch_accounts()
 
     def send_message(self):
         """Send a message to a recipient."""

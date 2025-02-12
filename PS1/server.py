@@ -206,11 +206,3 @@ def start_server():
 if __name__ == "__main__":
     threading.Thread(target=cleanup_expired_sessions, daemon=True).start()
     start_server()
-
-# TODO list: 
-# Must have:
-# Implement another wire protocol other than JSON (e.g., Protocol Buffers like)
-
-# Nice to have:
-# Implement thread safety for managing concurrent clients (e.g., using locks)
-# Implement a database for storing user data
