@@ -2,17 +2,13 @@ import socket
 import threading
 import json
 import time  # noqa: F401
-from utils import hash_password, generate_token
-
-# Server Configuration
-HOST = "127.0.0.1"
-PORT = 54400
+from utils import hash_password, generate_token, cleanup_expired_sessions, HOST, PORT, TOKEN_EXPIRY_TIME
 
 # Server State (in-memory storage)
 users = {}  # Stores {username: password_hash}
 messages = {}  # Stores {recipient: [unread_message1, unread_message2, ...]}
 clients = {}  # Stores {logged_in_username: client_socket}
-sessions = {}  # Stores {session_token: username}
+sessions = {}  # Stores {session_token: {username, expiry_time}}
 
 def handle_client(client_socket, address):
     """Handles communication with a single client."""
@@ -20,6 +16,8 @@ def handle_client(client_socket, address):
 
     try:
         while True:
+            # If the client-side socket is dead or closed, it will enter the break block and then disconnect
+            # If the server-side socket is closed, it will throw "Bad file descriptor" error, and then disconnect
             data = client_socket.recv(1024).decode("utf-8")
             if not data:
                 break
@@ -28,11 +26,14 @@ def handle_client(client_socket, address):
             print(f"[REQUEST FROM {address}] {request}")
 
             response = process_request(request, client_socket)
-            print(f"[RESPONSE TO {address}] {response}")
             client_socket.send(json.dumps(response).encode("utf-8"))
+    except OSError:
+        pass  # Ignore "Bad file descriptor" error, which occurs when the socket has been closed
+    except Exception as e:
+        print(f"[ERROR] {e.__class__.__name__} {e} occurred for {address}")
     finally:
-        client_socket.close()  # When there is any error in the try block
-        print(f"[DISCONNECTED] {address} disconnected.")
+        client_socket.close()
+        print(f"\n[DISCONNECTED] {address} disconnected.")
 
 def process_request(request, client_socket):
     """Processes the client's request and returns a response."""
@@ -63,13 +64,13 @@ def process_request(request, client_socket):
         
         clients[username] = client_socket
         session_token = generate_token()
-        sessions[session_token] = username
+        sessions[session_token] = {"username": username, "expiry_time": time.time() + TOKEN_EXPIRY_TIME}
         unread_count = len(messages.get(username, []))
         return {"action": "login", "status": "success", "data": {"session_token": session_token, "unread_message_count": unread_count}}
     
     elif action == "send_message":
         session_token = data.get("session_token")
-        sender = sessions.get(session_token)  # Validate session token
+        sender = sessions.get(session_token, {}).get("username")  # Validate session token
         recipient, message = data.get("recipient"), data.get("message")
 
         if not sender:
@@ -90,7 +91,7 @@ def process_request(request, client_socket):
 
     elif action == "read_messages":
         session_token = data.get("session_token")
-        username = sessions.get(session_token)  # Validate session token
+        username = sessions.get(session_token, {}).get("username")  # Validate session token
         num_to_read = data.get("num_to_read", 1)
 
         if not username:
@@ -102,15 +103,12 @@ def process_request(request, client_socket):
     
     elif action == "logout":
         session_token = data.get("session_token")
-        username = sessions.get(session_token)  # Validate session token
+        username = sessions.get(session_token, {}).get("username")  # Validate session token
 
         if not username:
             return {"action": "logout", "status": "error", "error": "Invalid session"}
 
-        try:
-            clients[username].close()
-        except Exception:  # Probably already closed due to some error
-            pass
+        clients[username].close()
         del clients[username]
         del sessions[session_token]
         return {"action": "logout", "status": "success"}
@@ -125,11 +123,17 @@ def start_server():
         print(f"[SERVER STARTED] Listening on {HOST}:{PORT}")
 
         while True:
-            client_socket, addr = server.accept()
+            try:
+                client_socket, addr = server.accept()
+            except KeyboardInterrupt:
+                print("\n[SERVER STOPPED] Exiting...")
+                break
             client_thread = threading.Thread(target=handle_client, args=(client_socket, addr))
             client_thread.start()
+    return
 
 if __name__ == "__main__":
+    threading.Thread(target=cleanup_expired_sessions, args=(sessions, clients), daemon=True).start()
     start_server()
 
 # TODO list: 

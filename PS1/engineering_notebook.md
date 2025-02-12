@@ -57,8 +57,8 @@
 - [ ] Implement wildcard search & pagination for listing accounts
 - [x] Implement batch retrieval of messages
 - [ ] Implement deletion logic for messages & accounts
-- [ ] Introduce a database backend (SQLite or lightweight key-value store)
-- [ ] Improve concurrency with threading or async
+- [ ] Introduce a database backend (SQLite or lightweight key-value store, however it could not be able to support concurrency)
+- [x] Improve concurrency with threading or async
 
 #### Phase 3: Finalization
 
@@ -67,6 +67,7 @@
 - [ ] Implement configuration file support
 - [ ] Conduct comprehensive testing & documentation
 - [ ] Optimize code for future extensibility
+- [ ] Check if all requirements have met
 
 
 ## Development Steps
@@ -331,10 +332,11 @@ Expected Output on the client:
 - [x] Store undelivered messages until the recipient logs in.
 - [x] Retrieve messages when the user requests them.
 - [x] Maintain a session list to validate if a request is coming from a logged-in user
+- [x] Add session token expiry with a background thread cleaning-up tokens to improve security.
 
-#### Unsolved Issues
-- [ ] In the line `data = client_socket.recv(1024).decode("utf-8")`, the server seems not to keep waiting for the requests from client; rather it just goes to the break statement and disconnect the client. This will prevent from sending a message to the recipient immediately if online, since the connection does not exist anymore.
-- [ ] Even if the above issue is solved, or say the server has the connection to send messages to the recipient, the recipient does not keep receiving messages from the server to display.
+#### Issues
+- [x] In the line `data = client_socket.recv(1024).decode("utf-8")`, the server seems not to keep waiting for the requests from client; rather it just goes to the break statement and disconnect the client. This will prevent from sending a message to the recipient immediately if online, since the connection does not exist anymore. [Solved: This is actually because the socket object in the client side is dead outside of the function. The solution is to maintain that object]
+- [ ] Even if the above issue is solved, or say the server has the connection to send messages to the recipient, the recipient does not keep receiving messages from the server to display. [For now let's just manually fetch the message; later it will be changed into multi-threading.]
 
 #### Testing
 Run the server in one terminal:
@@ -347,97 +349,137 @@ Run the client in another terminal:
 python client.py
 ```
 
-Expected Output on the server (the client side output are just simply those outputs which starts from `[RESPONSE TO ...]` on the server side):
+Expected Output on the server:
 ```
 [SERVER STARTED] Listening on 127.0.0.1:54400
 
-[NEW CONNECTION] ('127.0.0.1', 55982) connected.
-[REQUEST FROM ('127.0.0.1', 55982)] {'action': 'create_account', 'data': {'username': 'test_user', 'password': ''}}
-[RESPONSE TO ('127.0.0.1', 55982)] {'action': 'create_account', 'status': 'error', 'error': 'Missing username or password'}
-[DISCONNECTED] ('127.0.0.1', 55982) disconnected.
+[NEW CONNECTION] ('127.0.0.1', 59928) connected.
+[REQUEST FROM ('127.0.0.1', 59928)] {'action': 'create_account', 'data': {'username': 'test_user', 'password': ''}}
 
-[NEW CONNECTION] ('127.0.0.1', 55983) connected.
-[REQUEST FROM ('127.0.0.1', 55983)] {'action': 'create_account', 'data': {'password': 'secure123'}}
-[RESPONSE TO ('127.0.0.1', 55983)] {'action': 'create_account', 'status': 'error', 'error': 'Missing username or password'}
-[DISCONNECTED] ('127.0.0.1', 55983) disconnected.
+[DISCONNECTED] ('127.0.0.1', 59928) disconnected.
 
-[NEW CONNECTION] ('127.0.0.1', 55984) connected.
-[REQUEST FROM ('127.0.0.1', 55984)] {'action': 'create_account', 'data': {'username': 'test_user', 'password': 'secure123'}}
-[RESPONSE TO ('127.0.0.1', 55984)] {'action': 'create_account', 'status': 'success'}
-[DISCONNECTED] ('127.0.0.1', 55984) disconnected.
+[NEW CONNECTION] ('127.0.0.1', 59929) connected.
+[REQUEST FROM ('127.0.0.1', 59929)] {'action': 'create_account', 'data': {'password': 'secure123'}}
 
-[NEW CONNECTION] ('127.0.0.1', 55985) connected.
-[REQUEST FROM ('127.0.0.1', 55985)] {'action': 'create_account', 'data': {'username': 'alice', 'password': '1234'}}
-[RESPONSE TO ('127.0.0.1', 55985)] {'action': 'create_account', 'status': 'success'}
-[DISCONNECTED] ('127.0.0.1', 55985) disconnected.
+[DISCONNECTED] ('127.0.0.1', 59929) disconnected.
 
-[NEW CONNECTION] ('127.0.0.1', 55986) connected.
-[REQUEST FROM ('127.0.0.1', 55986)] {'action': 'create_account', 'data': {'username': 'bob', 'password': '5678'}}
-[RESPONSE TO ('127.0.0.1', 55986)] {'action': 'create_account', 'status': 'success'}
-[DISCONNECTED] ('127.0.0.1', 55986) disconnected.
+[NEW CONNECTION] ('127.0.0.1', 59930) connected.
+[REQUEST FROM ('127.0.0.1', 59930)] {'action': 'create_account', 'data': {'username': 'test_user', 'password': 'secure123'}}
 
-[NEW CONNECTION] ('127.0.0.1', 55987) connected.
-[REQUEST FROM ('127.0.0.1', 55987)] {'action': 'create_account', 'data': {'username': 'test_user', 'password': 'hello123'}}
-[RESPONSE TO ('127.0.0.1', 55987)] {'action': 'create_account', 'status': 'error', 'error': 'Username already exists'}
-[DISCONNECTED] ('127.0.0.1', 55987) disconnected.
+[DISCONNECTED] ('127.0.0.1', 59930) disconnected.
 
-[NEW CONNECTION] ('127.0.0.1', 55988) connected.
-[REQUEST FROM ('127.0.0.1', 55988)] {'action': 'login', 'data': {'username': 'test_user', 'password': 'hello123'}}
-[RESPONSE TO ('127.0.0.1', 55988)] {'action': 'login', 'status': 'error', 'error': 'Incorrect password'}
-[DISCONNECTED] ('127.0.0.1', 55988) disconnected.
+[NEW CONNECTION] ('127.0.0.1', 59931) connected.
+[REQUEST FROM ('127.0.0.1', 59931)] {'action': 'create_account', 'data': {'username': 'alice', 'password': '1234'}}
 
-[NEW CONNECTION] ('127.0.0.1', 55989) connected.
-[REQUEST FROM ('127.0.0.1', 55989)] {'action': 'login', 'data': {'username': 'test_user', 'password': 'secure123'}}
-[RESPONSE TO ('127.0.0.1', 55989)] {'action': 'login', 'status': 'success', 'data': {'session_token': '284c24a4-8243-441c-bf51-07a4721d5a2d', 'unread_message_count': 0}}
-[DISCONNECTED] ('127.0.0.1', 55989) disconnected.
+[DISCONNECTED] ('127.0.0.1', 59931) disconnected.
 
-[NEW CONNECTION] ('127.0.0.1', 55990) connected.
-[REQUEST FROM ('127.0.0.1', 55990)] {'action': 'login', 'data': {'username': 'alice', 'password': '1234'}}
-[RESPONSE TO ('127.0.0.1', 55990)] {'action': 'login', 'status': 'success', 'data': {'session_token': '2611dc40-3494-403b-85a9-81694f376aa6', 'unread_message_count': 0}}
-[DISCONNECTED] ('127.0.0.1', 55990) disconnected.
+[NEW CONNECTION] ('127.0.0.1', 59932) connected.
+[REQUEST FROM ('127.0.0.1', 59932)] {'action': 'create_account', 'data': {'username': 'bob', 'password': '5678'}}
 
-[NEW CONNECTION] ('127.0.0.1', 55991) connected.
-[REQUEST FROM ('127.0.0.1', 55991)] {'action': 'send_message', 'data': {'session_token': '284c24a4-8243-441c-bf51-07a4721d5a2d', 'recipient': 'alice', 'message': 'Hello, Alice!'}}
-[RESPONSE TO ('127.0.0.1', 55991)] {'action': 'send_message', 'status': 'success'}
-[DISCONNECTED] ('127.0.0.1', 55991) disconnected.
+[DISCONNECTED] ('127.0.0.1', 59932) disconnected.
 
-[NEW CONNECTION] ('127.0.0.1', 55992) connected.
-[REQUEST FROM ('127.0.0.1', 55992)] {'action': 'send_message', 'data': {'session_token': '284c24a4-8243-441c-bf51-07a4721d5a2d', 'recipient': 'bob', 'message': 'Hello, Bob!'}}
-[RESPONSE TO ('127.0.0.1', 55992)] {'action': 'send_message', 'status': 'success'}
-[DISCONNECTED] ('127.0.0.1', 55992) disconnected.
+[NEW CONNECTION] ('127.0.0.1', 59933) connected.
+[REQUEST FROM ('127.0.0.1', 59933)] {'action': 'create_account', 'data': {'username': 'test_user', 'password': 'hello123'}}
 
-[NEW CONNECTION] ('127.0.0.1', 55993) connected.
-[REQUEST FROM ('127.0.0.1', 55993)] {'action': 'login', 'data': {'username': 'bob', 'password': '5678'}}
-[RESPONSE TO ('127.0.0.1', 55993)] {'action': 'login', 'status': 'success', 'data': {'session_token': 'f9bf6859-1c27-4f48-bbb6-90f8711c8561', 'unread_message_count': 1}}
-[DISCONNECTED] ('127.0.0.1', 55993) disconnected.
+[DISCONNECTED] ('127.0.0.1', 59933) disconnected.
 
-[NEW CONNECTION] ('127.0.0.1', 55994) connected.
-[REQUEST FROM ('127.0.0.1', 55994)] {'action': 'read_messages', 'data': {'session_token': 'f9bf6859-1c27-4f48-bbb6-90f8711c8561'}}
-[RESPONSE TO ('127.0.0.1', 55994)] {'action': 'read_messages', 'status': 'success', 'data': {'unread_messages': [{'from': 'test_user', 'message': 'Hello, Bob!'}]}}
-[DISCONNECTED] ('127.0.0.1', 55994) disconnected.
+[NEW CONNECTION] ('127.0.0.1', 59934) connected.
+[REQUEST FROM ('127.0.0.1', 59934)] {'action': 'login', 'data': {'username': 'test_user', 'password': 'hello123'}}
 
-[NEW CONNECTION] ('127.0.0.1', 55995) connected.
-[REQUEST FROM ('127.0.0.1', 55995)] {'action': 'send_message', 'data': {'session_token': '284c24a4-8243-441c-bf51-07a4721d5a2d', 'recipient': 'carol', 'message': 'Hello, Carol!'}}
-[RESPONSE TO ('127.0.0.1', 55995)] {'action': 'send_message', 'status': 'error', 'error': 'Recipient does not exist'}
-[DISCONNECTED] ('127.0.0.1', 55995) disconnected.
+[DISCONNECTED] ('127.0.0.1', 59934) disconnected.
 
-[NEW CONNECTION] ('127.0.0.1', 55996) connected.
-[REQUEST FROM ('127.0.0.1', 55996)] {'action': 'send_message', 'data': {'session_token': 'invalid_token', 'username': 'alice', 'recipient': 'bob', 'message': 'Hello, Bob!'}}
-[RESPONSE TO ('127.0.0.1', 55996)] {'action': 'send_message', 'status': 'error', 'error': 'Invalid session'}
-[DISCONNECTED] ('127.0.0.1', 55996) disconnected.
+[NEW CONNECTION] ('127.0.0.1', 59935) connected.
+[REQUEST FROM ('127.0.0.1', 59935)] {'action': 'login', 'data': {'username': 'test_user', 'password': 'secure123'}}
 
-[NEW CONNECTION] ('127.0.0.1', 55997) connected.
-[REQUEST FROM ('127.0.0.1', 55997)] {'action': 'read_messages', 'data': {'session_token': 'invalid_token', 'username': 'bob'}}
-[RESPONSE TO ('127.0.0.1', 55997)] {'action': 'read_messages', 'status': 'error', 'error': 'Invalid session'}
-[DISCONNECTED] ('127.0.0.1', 55997) disconnected.
+[NEW CONNECTION] ('127.0.0.1', 59936) connected.
+[REQUEST FROM ('127.0.0.1', 59936)] {'action': 'login', 'data': {'username': 'alice', 'password': '1234'}}
 
-[NEW CONNECTION] ('127.0.0.1', 55998) connected.
-[REQUEST FROM ('127.0.0.1', 55998)] {'action': 'logout', 'data': {'session_token': '284c24a4-8243-441c-bf51-07a4721d5a2d'}}
-[RESPONSE TO ('127.0.0.1', 55998)] {'action': 'logout', 'status': 'success'}
-[DISCONNECTED] ('127.0.0.1', 55998) disconnected.
+[NEW CONNECTION] ('127.0.0.1', 59937) connected.
+[REQUEST FROM ('127.0.0.1', 59937)] {'action': 'send_message', 'data': {'session_token': '7f969921-6a31-473c-b43d-73f8644b2d0c', 'recipient': 'alice', 'message': 'Hello, Alice!'}}
 
-[NEW CONNECTION] ('127.0.0.1', 55999) connected.
-[REQUEST FROM ('127.0.0.1', 55999)] {'action': 'send_message', 'data': {'session_token': '284c24a4-8243-441c-bf51-07a4721d5a2d', 'recipient': 'alice', 'message': 'Hello again, Alice!'}}
-[RESPONSE TO ('127.0.0.1', 55999)] {'action': 'send_message', 'status': 'error', 'error': 'Invalid session'}
-[DISCONNECTED] ('127.0.0.1', 55999) disconnected.
+[DISCONNECTED] ('127.0.0.1', 59937) disconnected.
+
+[NEW CONNECTION] ('127.0.0.1', 59938) connected.
+[REQUEST FROM ('127.0.0.1', 59938)] {'action': 'send_message', 'data': {'session_token': '7f969921-6a31-473c-b43d-73f8644b2d0c', 'recipient': 'bob', 'message': 'Hello, Bob!'}}
+
+[DISCONNECTED] ('127.0.0.1', 59938) disconnected.
+
+[NEW CONNECTION] ('127.0.0.1', 59939) connected.
+[REQUEST FROM ('127.0.0.1', 59939)] {'action': 'login', 'data': {'username': 'bob', 'password': '5678'}}
+
+[NEW CONNECTION] ('127.0.0.1', 59940) connected.
+[REQUEST FROM ('127.0.0.1', 59940)] {'action': 'read_messages', 'data': {'session_token': '210f31fd-cdcd-4dd9-beb8-1ffd167ebd12'}}
+
+[DISCONNECTED] ('127.0.0.1', 59940) disconnected.
+
+[NEW CONNECTION] ('127.0.0.1', 59941) connected.
+[REQUEST FROM ('127.0.0.1', 59941)] {'action': 'send_message', 'data': {'session_token': '7f969921-6a31-473c-b43d-73f8644b2d0c', 'recipient': 'carol', 'message': 'Hello, Carol!'}}
+
+[DISCONNECTED] ('127.0.0.1', 59941) disconnected.
+
+[NEW CONNECTION] ('127.0.0.1', 59942) connected.
+[REQUEST FROM ('127.0.0.1', 59942)] {'action': 'send_message', 'data': {'session_token': 'invalid_token', 'username': 'alice', 'recipient': 'bob', 'message': 'Hello, Bob!'}}
+
+[DISCONNECTED] ('127.0.0.1', 59942) disconnected.
+
+[NEW CONNECTION] ('127.0.0.1', 59943) connected.
+[REQUEST FROM ('127.0.0.1', 59943)] {'action': 'read_messages', 'data': {'session_token': 'invalid_token', 'username': 'bob'}}
+
+[DISCONNECTED] ('127.0.0.1', 59943) disconnected.
+
+[NEW CONNECTION] ('127.0.0.1', 59944) connected.
+[REQUEST FROM ('127.0.0.1', 59944)] {'action': 'logout', 'data': {'session_token': '7f969921-6a31-473c-b43d-73f8644b2d0c'}}
+
+[DISCONNECTED] ('127.0.0.1', 59935) disconnected.
+
+[DISCONNECTED] ('127.0.0.1', 59944) disconnected.
+
+[NEW CONNECTION] ('127.0.0.1', 59945) connected.
+[REQUEST FROM ('127.0.0.1', 59945)] {'action': 'send_message', 'data': {'session_token': '7f969921-6a31-473c-b43d-73f8644b2d0c', 'recipient': 'alice', 'message': 'Hello again, Alice!'}}
+
+[DISCONNECTED] ('127.0.0.1', 59945) disconnected.
+
+[NEW CONNECTION] ('127.0.0.1', 59946) connected.
+[REQUEST FROM ('127.0.0.1', 59946)] {'action': 'send_message', 'data': {'session_token': 'a2bb7f61-ac84-43f1-972d-0397a390f65f', 'recipient': 'bob', 'message': 'Hi, Bob!'}}
+
+[DISCONNECTED] ('127.0.0.1', 59946) disconnected.
+
+[DISCONNECTED] ('127.0.0.1', 59936) disconnected.
+
+[DISCONNECTED] ('127.0.0.1', 59939) disconnected.
+
+[NEW CONNECTION] ('127.0.0.1', 60032) connected.
+[REQUEST FROM ('127.0.0.1', 60032)] {'action': 'send_message', 'data': {'session_token': 'a2bb7f61-ac84-43f1-972d-0397a390f65f', 'recipient': 'bob', 'message': 'Hi again, Bob!'}}
+
+[DISCONNECTED] ('127.0.0.1', 60032) disconnected.
 ```
+
+Expected Output on the client:
+```
+[SERVER RESPONSE] {'action': 'create_account', 'status': 'error', 'error': 'Missing username or password'}
+[SERVER RESPONSE] {'action': 'create_account', 'status': 'error', 'error': 'Missing username or password'}
+[SERVER RESPONSE] {'action': 'create_account', 'status': 'success'}
+[SERVER RESPONSE] {'action': 'create_account', 'status': 'success'}
+[SERVER RESPONSE] {'action': 'create_account', 'status': 'success'}
+[SERVER RESPONSE] {'action': 'create_account', 'status': 'error', 'error': 'Username already exists'}
+--------------------------------------------------
+[SERVER RESPONSE] {'action': 'login', 'status': 'error', 'error': 'Incorrect password'}
+[SERVER RESPONSE] {'action': 'login', 'status': 'success', 'data': {'session_token': '7f969921-6a31-473c-b43d-73f8644b2d0c', 'unread_message_count': 0}}
+[SERVER RESPONSE] {'action': 'login', 'status': 'success', 'data': {'session_token': 'a2bb7f61-ac84-43f1-972d-0397a390f65f', 'unread_message_count': 0}}
+--------------------------------------------------
+[SERVER RESPONSE] {'action': 'send_message', 'status': 'success'}
+[MANUALLY FETCHED MESSAGE] {'action': 'receive_message', 'data': {'sender': 'test_user', 'message': 'Hello, Alice!'}}
+[SERVER RESPONSE] {'action': 'send_message', 'status': 'success'}
+[SERVER RESPONSE] {'action': 'login', 'status': 'success', 'data': {'session_token': '210f31fd-cdcd-4dd9-beb8-1ffd167ebd12', 'unread_message_count': 1}}
+[SERVER RESPONSE] {'action': 'read_messages', 'status': 'success', 'data': {'unread_messages': [{'from': 'test_user', 'message': 'Hello, Bob!'}]}}
+[SERVER RESPONSE] {'action': 'send_message', 'status': 'error', 'error': 'Recipient does not exist'}
+[SERVER RESPONSE] {'action': 'send_message', 'status': 'error', 'error': 'Invalid session'}
+[SERVER RESPONSE] {'action': 'read_messages', 'status': 'error', 'error': 'Invalid session'}
+--------------------------------------------------
+[SERVER RESPONSE] {'action': 'logout', 'status': 'success'}
+[SERVER RESPONSE] {'action': 'send_message', 'status': 'error', 'error': 'Invalid session'}
+[SERVER RESPONSE] {'action': 'send_message', 'status': 'success'}
+[SERVER RESPONSE] {'action': 'send_message', 'status': 'error', 'error': 'Invalid session'}
+```
+
+### 5. 
