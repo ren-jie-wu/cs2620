@@ -330,7 +330,7 @@ Expected Output on the client:
 #### Key Additions
 - [x] Send a message to an online or offline user.
 - [x] Store undelivered messages until the recipient logs in.
-- [x] Retrieve messages when the user requests them.
+- [x] Retrieve messages when the user requests them, with number of messages designated by the user (positive number ~ reading from latest; negative number ~ reading from earliest)
 - [x] Maintain a session list to validate if a request is coming from a logged-in user
 - [x] Add session token expiry with a background thread cleaning-up tokens to improve security.
 
@@ -482,4 +482,78 @@ Expected Output on the client:
 [SERVER RESPONSE] {'action': 'send_message', 'status': 'error', 'error': 'Invalid session'}
 ```
 
-### 5. 
+### * Migrate the In-Memory Dictionary Storage to Database Storage
+
+This seem to cause error "database is locked", probably resulting from that we are using multi-threading and SQLite does not support high concurrency by default. This issue hasn't been solved yet.
+
+### 5. List Accounts with Wildcard Search
+
+#### Key Fetures
+
+- [x] List all usernames if no wildcard is provided.
+- [x] Support wildcard search using * (e.g., a* matches alice, andy but not bob).
+- [x] Require authentication similarly.
+- [x] Paginate results to avoid sending too many usernames at once.
+
+#### Testing
+Run the server in one terminal:
+``` sh
+python server.py
+```
+
+Run the client in another terminal:
+``` sh
+python client.py
+```
+
+Expected Output on the server:
+```
+[SERVER STARTED] Listening on 127.0.0.1:54400
+
+[NEW CONNECTION] ('127.0.0.1', 56429) connected.
+[REQUEST FROM ('127.0.0.1', 56429)] {'action': 'create_account', 'data': {'username': 'andy', 'password': 'andy123'}}
+
+[DISCONNECTED] ('127.0.0.1', 56429) disconnected.
+
+[NEW CONNECTION] ('127.0.0.1', 56430) connected.
+[REQUEST FROM ('127.0.0.1', 56430)] {'action': 'create_account', 'data': {'username': 'alex', 'password': 'alex123'}}
+
+[DISCONNECTED] ('127.0.0.1', 56430) disconnected.
+
+[NEW CONNECTION] ('127.0.0.1', 56431) connected.
+[REQUEST FROM ('127.0.0.1', 56431)] {'action': 'create_account', 'data': {'username': 'Andrew', 'password': 'Andrew123'}}
+
+[DISCONNECTED] ('127.0.0.1', 56431) disconnected.
+
+[NEW CONNECTION] ('127.0.0.1', 56432) connected.
+[REQUEST FROM ('127.0.0.1', 56432)] {'action': 'create_account', 'data': {'username': 'bob', 'password': 'bob123'}}
+
+[DISCONNECTED] ('127.0.0.1', 56432) disconnected.
+
+[NEW CONNECTION] ('127.0.0.1', 56433) connected.
+[REQUEST FROM ('127.0.0.1', 56433)] {'action': 'login', 'data': {'username': 'andy', 'password': 'andy123'}}
+
+[NEW CONNECTION] ('127.0.0.1', 56434) connected.
+[REQUEST FROM ('127.0.0.1', 56434)] {'action': 'list_accounts', 'data': {'session_token': '4e0d42fb-da68-451f-b397-162b87dc5691', 'pattern': 'a*', 'page': 1, 'page_size': 5}}
+
+[DISCONNECTED] ('127.0.0.1', 56434) disconnected.
+
+[NEW CONNECTION] ('127.0.0.1', 56435) connected.
+[REQUEST FROM ('127.0.0.1', 56435)] {'action': 'list_accounts', 'data': {'session_token': '4e0d42fb-da68-451f-b397-162b87dc5691'}}
+
+[DISCONNECTED] ('127.0.0.1', 56435) disconnected.
+
+[DISCONNECTED] ('127.0.0.1', 56433) disconnected.
+```
+
+Expected Output on the client:
+```
+[SERVER RESPONSE] {'action': 'create_account', 'status': 'success'}
+[SERVER RESPONSE] {'action': 'create_account', 'status': 'success'}
+[SERVER RESPONSE] {'action': 'create_account', 'status': 'success'}
+[SERVER RESPONSE] {'action': 'create_account', 'status': 'success'}
+[SERVER RESPONSE] {'action': 'login', 'status': 'success', 'data': {'session_token': '4e0d42fb-da68-451f-b397-162b87dc5691', 'unread_message_count': 0}}
+[SERVER RESPONSE] {'action': 'list_accounts', 'status': 'success', 'data': {'accounts': ['alex', 'andy'], 'page': 1, 'total_pages': 1}}
+[SERVER RESPONSE] {'action': 'list_accounts', 'status': 'success', 'data': {'accounts': ['Andrew', 'alex', 'andy', 'bob'], 'page': 1, 'total_pages': 1}}
+```
+

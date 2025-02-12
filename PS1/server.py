@@ -2,6 +2,7 @@ import socket
 import threading
 import json
 import time  # noqa: F401
+import fnmatch
 from utils import hash_password, generate_token, cleanup_expired_sessions, HOST, PORT, TOKEN_EXPIRY_TIME
 
 # Server State (in-memory storage)
@@ -68,6 +69,30 @@ def process_request(request, client_socket):
         unread_count = len(messages.get(username, []))
         return {"action": "login", "status": "success", "data": {"session_token": session_token, "unread_message_count": unread_count}}
     
+    elif action == "list_accounts":
+        session_token = data.get("session_token")
+
+        if not session_token:
+            return {"action": "list_accounts", "status": "error", "error": "Invalid session"}
+        
+        pattern = data.get("pattern", "*")
+        page = data.get("page", 1)
+        page_size = data.get("page_size", 10)
+        try:
+            page = int(page)
+            page_size = int(page_size)
+            assert page > 0 and page_size > 0
+        except Exception:
+            return {"action": "list_accounts", "status": "error", "error": "Invalid page or page size"}
+
+        matched_users = sorted(fnmatch.filter(users.keys(), pattern))
+        
+        start_index = (page - 1) * page_size
+        end_index = start_index + page_size
+        paginated_users = matched_users[start_index:end_index]
+
+        return {"action": "list_accounts", "status": "success", "data": {"accounts": paginated_users, "page": page, "total_pages": (len(matched_users) - 1) // page_size + 1}}
+
     elif action == "send_message":
         session_token = data.get("session_token")
         sender = sessions.get(session_token, {}).get("username")  # Validate session token
@@ -92,13 +117,22 @@ def process_request(request, client_socket):
     elif action == "read_messages":
         session_token = data.get("session_token")
         username = sessions.get(session_token, {}).get("username")  # Validate session token
-        num_to_read = data.get("num_to_read", 1)
+
+        num_to_read = data.get("num_to_read", 1)  # if num_to_read is positive, read from the latest message; if negative, read from the oldest message
+        try:
+            num_to_read = int(num_to_read)
+        except Exception:
+            return {"action": "read_messages", "status": "error", "error": "Invalid number of messages to read"}
 
         if not username:
             return {"action": "read_messages", "status": "error", "error": "Invalid session"}
-
-        user_messages = messages.get(username, [])[:num_to_read]
-        messages[username] = messages.get(username, [])[num_to_read:]  # Remove read messages
+        
+        if num_to_read < 0:
+            user_messages = messages.get(username, [])[:-num_to_read]
+            messages[username] = messages.get(username, [])[-num_to_read:]  # Remove read messages
+        else:
+            user_messages = messages.get(username, [])[-num_to_read:]
+            messages[username] = messages.get(username, [])[:-num_to_read]  # Remove read messages
         return {"action": "read_messages", "status": "success", "data": {"unread_messages": user_messages}}
     
     elif action == "logout":
@@ -143,4 +177,3 @@ if __name__ == "__main__":
 # Nice to have:
 # Implement thread safety for managing concurrent clients (e.g., using locks)
 # Implement a database for storing user data
-# Token Expiry
