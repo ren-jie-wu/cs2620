@@ -57,12 +57,13 @@
 - [x] Implement wildcard search & pagination for listing accounts
 - [x] Implement batch retrieval of messages
 - [x] Implement deletion logic for messages & accounts
-- [ ] Introduce a database backend (SQLite or lightweight key-value store, however it could not be able to support concurrency)
+- [x] Introduce a database backend (SQLite or lightweight key-value store)
 - [x] Improve concurrency with threading or async
 
 #### Phase 3: Finalization
 
 - [x] Build a basic GUI client
+- [ ] Make it run on two machines
 - [ ] Change the JSON wire protocol to an optimized one
 - [ ] Implement configuration file support
 - [ ] Conduct comprehensive testing & documentation
@@ -731,12 +732,12 @@ This is implemented through a `ChatClient.listen_for_messages` function in the `
 
 ### 8. Restructuring the Codes as a Better Design
 
-#### Space for Improvement
-- [ ] Modularization & Encapsulation – Move each functionality into separate classes/modules.
-- [ ] Better Request Handling – Decouple request processing from network handling.
-- [ ] Abstract Protocol Layer – Allow easy switching from JSON to other wiring protocol.
-- [ ] Thread Safety & Scalability – Improve handling of concurrent clients.
-- [ ] Persistence Support – Abstract storage handling for easy migration to a database.
+#### Improvement
+- [x] Modularization & Encapsulation – Move each functionality into separate classes/modules.
+  - We isolated configuration, utilities, protocol details, data storage, request handling, and server operations into separate modules on the server side. The Storage class encapsulates all data access and modification. The Protocol abstraction makes it easy to switch from JSON to another protocol later.
+  - We also decouple network communication and GUI logic for the client side. This will make it easier for separate testing.
+- [x] Persistence Support – Migrate information from memory to database
+  - Instead of connecting to database for each request in each thread, we connect for only once. This would not incur the "database is lock" issue, and the database itself will handle the read/write in different thread that may be concurrent.
 
 ### Next Steps:
 - [ ] Test coverage
