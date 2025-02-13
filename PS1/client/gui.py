@@ -1,9 +1,12 @@
 # client/gui.py
+import os
+import sys
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 import tkinter as tk
 from tkinter import messagebox, simpledialog
 import threading
-from .network import ChatNetwork
-from .config import PAGE_SIZE, MSG_NUM
+from client.network import ChatNetwork
+from client.config import PAGE_SIZE, MSG_NUM
 
 class ChatClient:
     def __init__(self, root):
@@ -116,7 +119,7 @@ class ChatClient:
             self.account_page = 1  # Reset to first page
             self.fetch_accounts()
     
-    def fetch_accounts(self):
+    def fetch_accounts(self, x=None, y=None):
         """Fetch and display a page of account listings."""
         response = self.network.send_request("list_accounts", {"session_token": self.session_token, 
                                                        "pattern": self.account_search_pattern, 
@@ -128,15 +131,15 @@ class ChatClient:
             total_pages = response["data"]["total_pages"]
 
             result_text = "\n".join(accounts) if accounts else "No accounts found."
-            self.create_account_window(result_text, page, total_pages)
+            account_window = self.create_account_window(result_text, page, total_pages, x, y)
         else:
             messagebox.showerror("Error", response["error"])
     
 
-    def create_account_window(self, result_text, page, total_pages):
+    def create_account_window(self, result_text, page, total_pages, x=None, y=None):
         account_window = tk.Toplevel(self.root)
         account_window.title("Account List")
-        account_window.geometry("300x250")  # Set a fixed size for the window
+        account_window.geometry(f"300x250+{x}+{y}" if x and y else "300x250")  # Set a fixed size for the window
         account_window.resizable(False, False)  # Make the window non-resizable
 
         # Create a main frame to hold content
@@ -177,9 +180,11 @@ class ChatClient:
 
     def change_account_page(self, direction, window):
         """Navigate through paginated account results."""
+        x = window.winfo_x()
+        y = window.winfo_y()
         self.account_page += direction
         window.destroy()
-        self.fetch_accounts()
+        self.fetch_accounts(x, y)
 
     def send_message(self):
         """Send a message to a recipient."""

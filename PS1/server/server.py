@@ -5,10 +5,13 @@
 
 import socket
 import threading
-from .config import HOST, PORT, PROTOCOL, STORAGE
-from ..shared.protocol import JSONProtocol, CustomizedProtocol
-from .storage import MemoryStorage, DatabaseStorage
-from .request_handler import RequestHandler
+import sys
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+from server.config import HOST, PORT, PROTOCOL, STORAGE
+from shared.protocol import JSONProtocol, CustomizedProtocol
+from server.storage import MemoryStorage, DatabaseStorage
+from server.request_handler import RequestHandler
 
 class ChatServer:
     def __init__(self, host=HOST, port=PORT):

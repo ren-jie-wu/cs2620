@@ -5,13 +5,15 @@
 # (Note: For thread safety, we use a lock here.)
 
 import os
+import sys
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 import threading
 import time
 import fnmatch
 import sqlite3
 from abc import ABC, abstractmethod
-from .config import TOKEN_EXPIRY_TIME, CLEAN_SESSION_INTERVAL
-from .utils import hash_password, generate_token
+from server.config import TOKEN_EXPIRY_TIME, CLEAN_SESSION_INTERVAL
+from server.utils import hash_password, generate_token
 
 class Storage(ABC):
     """
@@ -20,6 +22,11 @@ class Storage(ABC):
     Subclasses must implement all the methods below so that the rest of the system
     can interact with storage in a uniform way.
     """
+
+    def __init__(self):
+        self.lock = threading.Lock()
+        self.clients = {}  # {username: {session_token: client_socket, ...}}
+        self.sessions = {} # {session_token: {"username": username, "expiry_time": ...}}
 
     @abstractmethod
     def account_exist(self, username: str):
@@ -98,12 +105,22 @@ class Storage(ABC):
         """
         pass
 
-    @abstractmethod
     def cleanup_expired_sessions(self):
-        """
-        Periodically clean up expired sessions.
-        """
-        pass
+        """Periodically clean up expired sessions."""
+        while True:
+            with self.lock:
+                current_time = time.time()
+                expired_tokens = [token for token, data in self.sessions.items() if current_time > data["expiry_time"]]
+                for token in expired_tokens:
+                    username = self.sessions[token]["username"]
+                    if username in self.clients and token in self.clients[username]:
+                        try:
+                            self.clients[username][token].close()
+                        except Exception:
+                            pass
+                        self.clients[username].pop(token, None)
+                    self.sessions.pop(token, None)
+            time.sleep(CLEAN_SESSION_INTERVAL)
 
 class MemoryStorage(Storage):
     """
@@ -112,9 +129,7 @@ class MemoryStorage(Storage):
     def __init__(self):
         self.users = {}       # {username: password_hash}
         self.messages = {}    # {username: [message, ...]}
-        self.clients = {}     # {username: {session_token: client_socket, ...}}
-        self.sessions = {}    # {session_token: {"username": username, "expiry_time": ...}}
-        self.lock = threading.Lock()
+        super().__init__()
 
     def account_exist(self, username: str):
         with self.lock:
@@ -207,22 +222,6 @@ class MemoryStorage(Storage):
                     self.clients[username].pop(session_token, None)
                 self.sessions.pop(session_token, None)
 
-    def cleanup_expired_sessions(self):
-        while True:
-            with self.lock:
-                current_time = time.time()
-                expired_tokens = [token for token, data in self.sessions.items() if current_time > data["expiry_time"]]
-                for token in expired_tokens:
-                    username = self.sessions[token]["username"]
-                    if username in self.clients and token in self.clients[username]:
-                        try:
-                            self.clients[username][token].close()
-                        except Exception:
-                            pass
-                        self.clients[username].pop(token, None)
-                    self.sessions.pop(token, None)
-            time.sleep(CLEAN_SESSION_INTERVAL)
-
 class DatabaseStorage(Storage):
     """
     Database storage implementation using SQLite.
@@ -231,16 +230,13 @@ class DatabaseStorage(Storage):
     to serialize access.
     """
     def __init__(self, db_path=None):
+        super().__init__()
         self.db_path = db_path or os.path.join(os.path.dirname(__file__), "chat.db")
-        self.lock = threading.Lock()
         # Open a persistent connection (allowing usage from multiple threads)
         self.conn = sqlite3.connect(self.db_path, check_same_thread=False)
         self.conn.row_factory = sqlite3.Row
         self._initialize_db()
-        # In-memory structures for ephemeral data
-        self.clients = {}  # {username: {session_token: client_socket, ...}}
-        self.sessions = {} # {session_token: {"username": username, "expiry_time": ...}}
-
+        
     def _initialize_db(self):
         with self.lock:
             cursor = self.conn.cursor()
@@ -258,6 +254,13 @@ class DatabaseStorage(Storage):
                     message TEXT
                 )
             ''')
+            self.conn.commit()
+    
+    def _clear_db(self):
+        with self.lock:
+            cursor = self.conn.cursor()
+            cursor.execute("DELETE FROM users")
+            cursor.execute("DELETE FROM messages")
             self.conn.commit()
 
     def account_exist(self, username: str):
@@ -382,19 +385,3 @@ class DatabaseStorage(Storage):
                 if username in self.clients and session_token in self.clients[username]:
                     self.clients[username].pop(session_token, None)
                 self.sessions.pop(session_token, None)
-
-    def cleanup_expired_sessions(self):
-        while True:
-            with self.lock:
-                current_time = time.time()
-                expired_tokens = [token for token, data in self.sessions.items() if current_time > data["expiry_time"]]
-                for token in expired_tokens:
-                    username = self.sessions[token]["username"]
-                    if username in self.clients and token in self.clients[username]:
-                        try:
-                            self.clients[username][token].close()
-                        except Exception:
-                            pass
-                        self.clients[username].pop(token, None)
-                    self.sessions.pop(token, None)
-            time.sleep(CLEAN_SESSION_INTERVAL)

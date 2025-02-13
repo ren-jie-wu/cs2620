@@ -1,8 +1,11 @@
 # client/network.py
 import socket
 import json
-from .config import HOST, PORT, PROTOCOL, BUFFER_SIZE
-from ..shared.protocol import JSONProtocol, CustomizedProtocol
+import sys
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+from client.config import HOST, PORT, PROTOCOL, BUFFER_SIZE
+from shared.protocol import JSONProtocol, CustomizedProtocol
 
 class ChatNetwork:
     """Handles network communication between the client and server."""

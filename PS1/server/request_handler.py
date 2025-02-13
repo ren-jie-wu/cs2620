@@ -3,8 +3,11 @@
 # (by action) to storage operations. 
 # Notice that the logic is now decoupled from raw socket handling.
 
-from ..shared.protocol import Protocol
-from .storage import Storage
+import sys
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+from shared.protocol import Protocol
+from server.storage import Storage
 
 class RequestHandler:
     def __init__(self, storage: Storage, protocol: Protocol):

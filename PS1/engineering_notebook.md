@@ -729,6 +729,7 @@ This is implemented through a `ChatClient.listen_for_messages` function in the `
   - [x] Account Deleting UI
   - [x] Logout UI
 - [ ] Polishing UI Layout
+- [x] (Patch) the account list window is now fixed
 
 ### 8. Restructuring the Codes as a Better Design
 
