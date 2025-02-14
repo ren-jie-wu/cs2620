@@ -63,7 +63,7 @@
 #### Phase 3: Finalization
 
 - [x] Build a basic GUI client
-- [ ] Make it run on two machines
+- [x] Test if it runs on two machines
 - [ ] Change the JSON wire protocol to an optimized one
 - [ ] Implement configuration file support
 - [ ] Conduct comprehensive testing & documentation
@@ -735,10 +735,45 @@ This is implemented through a `ChatClient.listen_for_messages` function in the `
 
 #### Improvement
 - [x] Modularization & Encapsulation – Move each functionality into separate classes/modules.
-  - We isolated configuration, utilities, protocol details, data storage, request handling, and server operations into separate modules on the server side. The Storage class encapsulates all data access and modification. The Protocol abstraction makes it easy to switch from JSON to another protocol later.
-  - We also decouple network communication and GUI logic for the client side. This will make it easier for separate testing.
+  - Isolated configuration, utilities, protocol details, data storage, request handling, and server operations into separate modules on the server side. The Storage class encapsulates all data access and modification. The Protocol abstraction makes it easy to switch from JSON to another protocol later.
+  - Decoupled network communication and GUI logic for the client side. This will make it easier for separate testing.
 - [x] Persistence Support – Migrate information from memory to database
-  - Instead of connecting to database for each request in each thread, we connect for only once. This would not incur the "database is lock" issue, and the database itself will handle the read/write in different thread that may be concurrent.
+  - Instead of connecting to database for each request in each thread, we'd connect for only once. This would not incur the "database is lock" issue, and the database itself will handle the read/write in different thread that may be concurrent.
+
+### * Patch: Solving that the client gui often breaks down
+
+It's observed that if the gui often breaks down, and it should have nothing to do with the server side, since from the server output we can see that the requests and responses are correctly delivered, but the gui just got stuck. After removing the background thread checking coming-in messages it won't get stuck. Probably this needs to be optimized.
+
+- [ ] Optimize background thread
+
+### 9. Testing with `unittest`
+
+#### Testing Components
+First test the components in isolation, then their integration functionality. 
+- server side
+  - [x] protocol.py (test_protocol.py)
+  - [x] storage.py (test_storage_memory.py, test_storage_db.py, test_storage_session_cleanup.py)
+  - [x] request_handler.py (test_request_handler.py)
+  - [x] server.py (test_server.py)
+  - [x] integration of the server side (test_server_integration.py)
+- client side
+  - [ ] network.py
+  - [ ] 
+- [ ] integration of server and client
+
+
+#### Testing command
+Change the directory to `PS1/` and make sure `server/`, `client/` and `shared/` are in the folder. Make sure `pytest-cov` has been installed.
+``` bash
+pytest --cov=server --cov=client --cov=shared --cov-report=html
+```
+
+This will generate a html report, which can be reached by
+``` bash
+open htmlcov/index.html
+```
+
+#### Testing results
 
 ### Next Steps:
 - [ ] Test coverage

@@ -351,7 +351,6 @@ class DatabaseStorage(Storage):
             cursor = self.conn.cursor()
             cursor.execute("SELECT COUNT(*) FROM messages WHERE recipient=?", (username,))
             count_before = cursor.fetchone()[0]
-            print("[DEBUG] num_to_delete:", num_to_delete)
             if num_to_delete >= 0:
                 cursor.execute("SELECT id FROM messages WHERE recipient=? ORDER BY id ASC LIMIT ?", (username, num_to_delete))
             else:

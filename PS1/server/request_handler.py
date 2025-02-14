@@ -66,10 +66,8 @@ class RequestHandler:
                 return {"action": "send_message", "status": "error", "error": "Recipient does not exist"}
             delivered = False
             if recipient in self.storage.clients:
-                print(f"[DEBUG] recipient: {recipient}")
                 for sock in self.storage.clients[recipient].values():
                     try:
-                        print(f"[DEBUG] socket: {sock}")
                         sock.send(self.protocol.encode({"action": "receive_message", "data": {"sender": sender, "message": message}}))
                         delivered = True
                     except Exception:

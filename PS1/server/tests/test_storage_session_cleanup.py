@@ -20,8 +20,7 @@ class TestSessionCleanup(unittest.TestCase):
             "bob": {"token2": MagicMock()},
         }
 
-    @patch("time.sleep", return_value=None)  # Mock sleep to make test fast
-    def test_cleanup_expired_sessions(self, mock_sleep):
+    def test_cleanup_expired_sessions(self):
         """Test that expired sessions are removed, while active ones remain."""
         # Run cleanup for a short time in a separate thread
         cleanup_thread = threading.Thread(target=self.storage.cleanup_expired_sessions, daemon=True)
@@ -35,8 +34,7 @@ class TestSessionCleanup(unittest.TestCase):
         self.assertNotIn("token1", self.storage.clients.get("alice", {}))
         self.assertIn("token2", self.storage.sessions)
 
-    @patch("time.sleep", return_value=None)
-    def test_cleanup_handles_socket_exceptions(self, mock_sleep):
+    def test_cleanup_handles_socket_exceptions(self):
         """Test that cleanup continues even if closing a socket raises an error."""
         self.storage.clients["alice"]["token1"].close.side_effect = Exception("Socket error")
 
