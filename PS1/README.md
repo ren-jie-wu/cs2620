@@ -13,6 +13,7 @@ A simple client-server chat application that allows users to send and receive me
 
 ## 📂 Project Structure
 
+```
 chat-system/                
 │── server/                 # Server side code
 │   │── tests/              # Test code (for server)
@@ -34,6 +35,7 @@ chat-system/
 │── requirements.txt        # Python dependencies
 │── README.md               # Documentation (this file)
 │── engineering_notebook.md # Record of development
+```
 
 ## 💻 Installation & Setup
 
