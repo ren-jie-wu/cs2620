@@ -742,7 +742,7 @@ This is implemented through a `ChatClient.listen_for_messages` function in the `
 
 ### * Patch: Solving that the client gui often breaks down
 
-It's observed that if the gui often breaks down, and it should have nothing to do with the server side, since from the server output we can see that the requests and responses are correctly delivered, but the gui just got stuck. After removing the background thread checking coming-in messages it won't get stuck. Probably this needs to be optimized.
+It's observed that the client gui often breaks down, and it should have nothing to do with the server side, since from the server output we can see that the requests and responses are correctly delivered, but the gui just got stuck. After removing the background thread checking coming-in messages it won't get stuck. Probably this needs to be optimized.
 
 - [ ] Optimize background thread
 
@@ -756,9 +756,7 @@ First test the components in isolation, then their integration functionality.
   - [x] request_handler.py (test_request_handler.py)
   - [x] server.py (test_server.py)
   - [x] integration of the server side (test_server_integration.py)
-- client side
-  - [ ] network.py
-  - [ ] 
+- [ ] client side
 - [ ] integration of server and client
 
 
@@ -776,8 +774,8 @@ open htmlcov/index.html
 #### Testing results
 
 ### Next Steps:
-- [ ] Test coverage
-- [ ] Second Protocol
-- [ ] Analysis of the two protocols (efficiency, scalability)
-- [ ] Documentation of the two protocols
-- [ ] Configuration files ("Connection information may be specified as either a command-line option or in a configuration file.")
+- [ ] Fix client GUI bug
+- [ ] Report test coverage (client & integration)
+- [ ] Design and implement a second Protocol
+- [ ] Analyze the two protocols (efficiency, scalability)
+- [ ] Finalize Documentation

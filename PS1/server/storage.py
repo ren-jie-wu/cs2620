@@ -188,7 +188,7 @@ class MemoryStorage(Storage):
                 self.messages[username] = msgs[abs(num_to_read):]
             else:
                 # Read the latest num_to_read messages
-                result = msgs[-num_to_read:]
+                result = msgs[-num_to_read:][::-1]
                 self.messages[username] = msgs[:-num_to_read]
             remaining = len(self.messages.get(username, []))
             return result, remaining

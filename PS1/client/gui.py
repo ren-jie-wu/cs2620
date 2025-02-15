@@ -77,12 +77,15 @@ class ChatClient:
             if response and response.get("action") == "receive_message":
                 sender = response["data"]["sender"]
                 message = response["data"]["message"]
-                self.display_message(f"[NEW] {sender} -> You: {message}")
+                self.root.after(0, self.display_messages([f"[NEW] {sender} -> You: {message}\n"]))
+                # print(f"[NEW] {sender} -> You: {message}\n")
 
-    def display_message(self, message):
+    def display_messages(self, messages):
         """Update the chat display with a new message."""
         self.chat_display.config(state=tk.NORMAL)
-        self.chat_display.insert(tk.END, message + "\n")
+        self.chat_display.insert("1.0", "-"*50 + "\n")
+        for message in messages[::-1]:  # Reverse order to display earliest message at the bottom
+            self.chat_display.insert("1.0", message)
         self.chat_display.config(state=tk.DISABLED)
 
     def create_account(self):
@@ -195,9 +198,7 @@ class ChatClient:
             response = self.network.send_request("send_message", {"session_token": self.session_token, "recipient": recipient, "message": message})
 
             if response.get("status") == "success":
-                self.chat_display.config(state=tk.NORMAL)
-                self.chat_display.insert(tk.END, f"You -> {recipient}: {message}\n")
-                self.chat_display.config(state=tk.DISABLED)
+                self.display_messages([f"You -> {recipient}: {message}\n"])
                 self.message_entry.delete(0, tk.END)
             else:
                 messagebox.showerror("Error", response.get("error"))
@@ -209,10 +210,7 @@ class ChatClient:
         if response.get("status") == "success":
             unread_messages = response.get("data", {}).get("unread_messages")
             if unread_messages:
-                self.chat_display.config(state=tk.NORMAL)
-                for msg in unread_messages:
-                    self.chat_display.insert(tk.END, f"{msg['from']} -> You: {msg['message']}\n")
-                self.chat_display.config(state=tk.DISABLED)
+                self.display_messages([f"{msg['from']} -> You: {msg['message']}\n" for msg in unread_messages])
             else:
                 messagebox.showinfo("No Messages", "No new messages.")
         else:
