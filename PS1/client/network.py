@@ -1,6 +1,5 @@
 # client/network.py
 import socket
-import json
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
@@ -20,7 +19,7 @@ class ChatNetwork:
             self.socket.send(self.protocol.encode({"action": action, "data": data}))
             response = self.protocol.decode(self.socket.recv(BUFFER_SIZE))
             return response
-        except (socket.error, json.JSONDecodeError) as e:
+        except Exception as e:
             return {"action": action, "status": "error", "error": f"Network error: {str(e)}"}
 
     def receive_message(self):
@@ -30,7 +29,7 @@ class ChatNetwork:
             if not data:
                 return None
             return self.protocol.decode(data)
-        except (socket.error, json.JSONDecodeError):
+        except Exception:
             return None
 
     def close(self):

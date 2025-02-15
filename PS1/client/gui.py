@@ -8,12 +8,14 @@ import threading
 from client.network import ChatNetwork
 from client.config import PAGE_SIZE, MSG_NUM
 
+
 class ChatClient:
-    def __init__(self, root):
+    def __init__(self, root, network=ChatNetwork):
         self.root = root
-        self.root.title("Chat System")
-        
-        self.network = ChatNetwork()  # Use the network class
+        self.root.title("Chat System") 
+        self.network = network       
+        self.connection = network()
+        self.background_connection = None
         self.session_token = None
 
         self.build_login_screen()
@@ -36,6 +38,9 @@ class ChatClient:
 
     def build_chat_screen(self):
         """Create the main chat UI after login."""
+        username = self.username_entry.get()
+        password = self.password_entry.get()
+
         for widget in self.root.winfo_children():
             widget.destroy()
 
@@ -67,32 +72,41 @@ class ChatClient:
         tk.Button(self.root, text="Log Out", command=self.logout).pack(pady=10)
 
         self.running = True
-        self.listener_thread = threading.Thread(target=self.listen_for_messages, daemon=True)
+        self.listener_thread = threading.Thread(target=self.listen_for_messages, args=(username, password), daemon=True)
         self.listener_thread.start()
 
-    def listen_for_messages(self):
+    def listen_for_messages(self, username, password):
         """Background thread that listens for incoming messages."""
+        # Create a new connection for background thread
+        # This can successfully solve the problem of getting stuck for no reason (probably 
+        # due to hearing with the same socket in the main thread and the background)
+        self.background_connection = self.network()
+        self.background_connection.send_request("login", {"username": username, "password": password})
         while self.running:
-            response = self.network.receive_message()
+            response = self.background_connection.receive_message()
             if response and response.get("action") == "receive_message":
                 sender = response["data"]["sender"]
                 message = response["data"]["message"]
-                self.root.after(0, self.display_messages([f"[NEW] {sender} -> You: {message}\n"]))
-                # print(f"[NEW] {sender} -> You: {message}\n")
+                self.display_messages([f"[NEW] {sender} -> You: {message}\n"])
 
     def display_messages(self, messages):
         """Update the chat display with a new message."""
-        self.chat_display.config(state=tk.NORMAL)
-        self.chat_display.insert("1.0", "-"*50 + "\n")
-        for message in messages[::-1]:  # Reverse order to display earliest message at the bottom
-            self.chat_display.insert("1.0", message)
-        self.chat_display.config(state=tk.DISABLED)
+        # The display_messages method can be called from a background thread, 
+        # so we need to ensure that the GUI update happens in the main thread.
+        def task():
+            self.chat_display.config(state=tk.NORMAL)
+            self.chat_display.insert("1.0", "-"*50 + "\n")
+            for message in messages[::-1]:  # Reverse order to display earliest message at the bottom
+                self.chat_display.insert("1.0", message)
+            self.chat_display.config(state=tk.DISABLED)
+
+        self.root.after(1, task)
 
     def create_account(self):
         """Handle account creation."""
         username = self.username_entry.get()
         password = self.password_entry.get()
-        response = self.network.send_request("create_account", {"username": username, "password": password})
+        response = self.connection.send_request("create_account", {"username": username, "password": password})
 
         if response["status"] == "success":
             messagebox.showinfo("Success", "Account created. Please log in.")
@@ -103,7 +117,7 @@ class ChatClient:
         """Handle user login."""
         username = self.username_entry.get()
         password = self.password_entry.get()
-        response = self.network.send_request("login", {"username": username, "password": password})
+        response = self.connection.send_request("login", {"username": username, "password": password})
 
         if response["status"] == "success":
             self.session_token = response["data"]["session_token"]
@@ -124,7 +138,7 @@ class ChatClient:
     
     def fetch_accounts(self, x=None, y=None):
         """Fetch and display a page of account listings."""
-        response = self.network.send_request("list_accounts", {"session_token": self.session_token, 
+        response = self.connection.send_request("list_accounts", {"session_token": self.session_token, 
                                                        "pattern": self.account_search_pattern, 
                                                        "page": self.account_page, "page_size": PAGE_SIZE})
 
@@ -134,7 +148,7 @@ class ChatClient:
             total_pages = response["data"]["total_pages"]
 
             result_text = "\n".join(accounts) if accounts else "No accounts found."
-            account_window = self.create_account_window(result_text, page, total_pages, x, y)
+            _ = self.create_account_window(result_text, page, total_pages, x, y)
         else:
             messagebox.showerror("Error", response["error"])
     
@@ -189,23 +203,33 @@ class ChatClient:
         window.destroy()
         self.fetch_accounts(x, y)
 
+    def edit_message_entry(self, action, *args, **kwargs):
+        """Edit the message entry box allowing GUI loop arrangement."""
+        def task():
+            if action == "delete":
+                self.message_entry.delete(*args, **kwargs)
+            elif action == "insert":
+                self.message_entry.insert(*args, **kwargs)
+        
+        self.root.after(1, task)
+    
     def send_message(self):
         """Send a message to a recipient."""
         recipient = simpledialog.askstring("Recipient", "Enter recipient username:")
         message = self.message_entry.get()
 
         if recipient and message:
-            response = self.network.send_request("send_message", {"session_token": self.session_token, "recipient": recipient, "message": message})
+            response = self.connection.send_request("send_message", {"session_token": self.session_token, "recipient": recipient, "message": message})
 
             if response.get("status") == "success":
                 self.display_messages([f"You -> {recipient}: {message}\n"])
-                self.message_entry.delete(0, tk.END)
+                self.edit_message_entry("delete", 0, tk.END)
             else:
                 messagebox.showerror("Error", response.get("error"))
 
     def read_messages(self):
         """Retrieve unread messages."""
-        response = self.network.send_request("read_messages", {"session_token": self.session_token, "num_to_read": MSG_NUM})
+        response = self.connection.send_request("read_messages", {"session_token": self.session_token, "num_to_read": MSG_NUM})
 
         if response.get("status") == "success":
             unread_messages = response.get("data", {}).get("unread_messages")
@@ -221,7 +245,7 @@ class ChatClient:
         num_to_delete = simpledialog.askinteger("Delete Messages", "Enter number of unread messages to delete (positive number to delete from earliest and negative for latest):", minvalue=1)
 
         if num_to_delete is not None:
-            response = self.network.send_request("delete_messages", {"session_token": self.session_token, "num_to_delete": num_to_delete})
+            response = self.connection.send_request("delete_messages", {"session_token": self.session_token, "num_to_delete": num_to_delete})
 
             if response["status"] == "success":
                 num_deleted = response["data"]["num_messages_deleted"]
@@ -233,7 +257,7 @@ class ChatClient:
         """Delete the logged-in user's account and return to login screen."""
         if messagebox.askyesno("Confirm", "Are you sure you want to delete your account?"):
             self.running = False  # Stop listener thread
-            response = self.network.send_request("delete_account", {"session_token": self.session_token})
+            response = self.connection.send_request("delete_account", {"session_token": self.session_token})
 
             if response.get("status") == "success":
                 self.session_token = None  # Clear session
@@ -246,7 +270,7 @@ class ChatClient:
         """Log out the user and return to login screen."""
         if messagebox.askyesno("Confirm", "Are you sure you want to log out?"):
             self.running = False  # Stop listener thread
-            response = self.network.send_request("logout", {"session_token": self.session_token})
+            response = self.connection.send_request("logout", {"session_token": self.session_token})
 
             if response["status"] == "success":
                 self.session_token = None
