@@ -4,11 +4,11 @@ A simple client-server chat application that allows users to send and receive me
 
 ## 🚀 Features
 
-✅ User Authentication: Create an account, log in, and log out securely.
-✅ Messaging: Send messages instantly if the recipient is online; store them otherwise.
-✅ Session Management: Uses session tokens with expiration handling.
-✅ Message Handling: Read and delete unread messages.
-✅ User Listing: Search for users with wildcard matching.
+✅ User Authentication: Create an account, log in, and log out securely.  
+✅ Messaging: Send messages instantly if the recipient is online; store them otherwise.  
+✅ Session Management: Uses session tokens with expiration handling.  
+✅ Message Handling: Read and delete unread messages.  
+✅ User Listing: Search for users with wildcard matching.  
 ✅ GUI Client: User-friendly interface for sending and receiving messages.
 
 ## 📂 Project Structure
