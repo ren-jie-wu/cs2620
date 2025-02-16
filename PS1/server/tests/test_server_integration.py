@@ -6,7 +6,8 @@ import os
 import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 from server.server import ChatServer
-from server.config import HOST, PORT
+from server.config import HOST, PORT, BUFFER_SIZE
+from shared.protocol import JSONProtocol
 
 class TestChatServerIntegration(unittest.TestCase):
     """Integration tests for the full server with real components."""
@@ -23,12 +24,13 @@ class TestChatServerIntegration(unittest.TestCase):
         self.server.storage._clear_db()  # Clear the database before tests
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.client_socket.connect((HOST, PORT))
+        self.protocol = JSONProtocol()
 
     def send_request(self, action, data={}):
         """Helper function to send a request to the server."""
-        request = json.dumps({"action": action, "data": data}).encode("utf-8")
+        request = self.protocol.encode({"action": action, "data": data})
         self.client_socket.send(request)
-        response = json.loads(self.client_socket.recv(1024).decode("utf-8"))
+        response = self.protocol.decode(self.client_socket.recv(BUFFER_SIZE))[0]
         return response
 
     def test_create_account(self):
@@ -83,8 +85,8 @@ class TestChatServerIntegration(unittest.TestCase):
     def test_malformed_json(self):
         """Test sending malformed JSON."""
         self.client_socket.send(b'INVALID_JSON')  # Send invalid data
-        response = self.client_socket.recv(1024)  # Should not crash the server
-        self.assertEqual(response, b'')  # No valid response expected
+        response = self.client_socket.recv(BUFFER_SIZE)  # Should not crash the server
+        self.assertEqual(self.protocol.decode(response)[0]["status"], "error")
 
     @classmethod
     def tearDownClass(cls):

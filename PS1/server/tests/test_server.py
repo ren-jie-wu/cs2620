@@ -71,7 +71,7 @@ class TestChatServer(unittest.TestCase):
         mock_client_socket = MockSocket.return_value
         mock_client_socket.recv.side_effect = [b'{"action": "ping"}', b""]  # One request, then disconnect
 
-        self.mock_protocol.decode.return_value = {"action": "ping"}
+        self.mock_protocol.decode.return_value = [{"action": "ping"}]
         self.mock_handler.process_request.return_value = {"status": "success"}
 
         self.server.handle_client(mock_client_socket, ("127.0.0.1", 5000))
@@ -99,7 +99,7 @@ class TestChatServer(unittest.TestCase):
         mock_client_socket = MockSocket.return_value
         mock_client_socket.recv.side_effect = [b'{"action": "ping"}', ConnectionResetError]  # Normal then error
 
-        self.mock_protocol.decode.return_value = {"action": "ping"}
+        self.mock_protocol.decode.return_value = [{"action": "ping"}]
         self.mock_handler.process_request.return_value = {"status": "success"}
 
         self.server.handle_client(mock_client_socket, ("127.0.0.1", 5000))

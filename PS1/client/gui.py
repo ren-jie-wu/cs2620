@@ -94,11 +94,12 @@ class ChatClient:
             self.running = False
             return
         while self.running:
-            response = self.background_connection.receive_message()
-            if response and response.get("action") == "receive_message":
-                sender = response["data"]["sender"]
-                message = response["data"]["message"]
-                self.display_messages([f"[NEW] {sender} -> You: {message}\n"])
+            responses = self.background_connection.receive_message()
+            for response in responses:
+                if response and response.get("action") == "receive_message":
+                    sender = response["data"]["sender"]
+                    message = response["data"]["message"]
+                    self.display_messages([f"[NEW] {sender} -> You: {message}\n"])
             time.sleep(refresh_interval)
 
     def display_messages(self, messages, append=False):

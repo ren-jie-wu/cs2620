@@ -6,5 +6,6 @@ from shared.config import HOST, PORT, PROTOCOL
 
 TOKEN_EXPIRY_TIME = 3000  # seconds
 CLEAN_SESSION_INTERVAL = 60  # seconds
+BUFFER_SIZE = 4096  # bytes
 
 STORAGE = "db"

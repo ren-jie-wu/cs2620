@@ -63,6 +63,26 @@ class TestRequestHandler(unittest.TestCase):
 
         self.assertEqual(response["status"], "error")
         self.assertEqual(response["error"], "Incorrect password")
+    
+    def test_listen_success(self):
+        """Test successful listening."""
+        self.mock_storage.listen.return_value = (True, None, "token123")
+
+        request = {"action": "listen", "data": {"username": "alice", "password": "1234"}}
+        response = self.handler.process_request(request, None)
+
+        self.assertEqual(response["status"], "success")
+        self.assertEqual(response["data"]["session_token"], "token123")
+
+    def test_listen_invalid_credentials(self):
+        """Test listening failure due to incorrect password."""
+        self.mock_storage.listen.return_value = (False, "Incorrect password", None)
+
+        request = {"action": "listen", "data": {"username": "alice", "password": "wrongpass"}}
+        response = self.handler.process_request(request, None)
+
+        self.assertEqual(response["status"], "error")
+        self.assertEqual(response["error"], "Incorrect password")
 
     def test_list_accounts_success(self):
         """Test listing accounts successfully."""

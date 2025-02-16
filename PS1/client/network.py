@@ -17,7 +17,8 @@ class ChatNetwork:
         """Send a request to the server and receive a response."""
         try:
             self.socket.send(self.protocol.encode({"action": action, "data": data}))
-            response = self.protocol.decode(self.socket.recv(BUFFER_SIZE))
+            response = self.protocol.decode(self.socket.recv(BUFFER_SIZE))[0]
+            # Typically only one response; to be optimized for multiple responses
             return response
         except Exception as e:
             return {"action": action, "status": "error", "error": f"{str(e.__class__)}: {str(e)}"}

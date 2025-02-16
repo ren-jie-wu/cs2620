@@ -28,7 +28,7 @@ class TestChatNetwork(unittest.TestCase):
     def test_receive_message(self):
         """Test receiving a message from the server."""
         self.mock_socket.recv.return_value = b'{"action": "receive_message", "data": {"sender": "bob", "message": "Hi Alice"}}'
-        message = self.network.receive_message()
+        message = self.network.receive_message()[0]
         self.assertEqual(message["data"]["sender"], "bob")
         self.assertEqual(message["data"]["message"], "Hi Alice")
 
@@ -38,7 +38,7 @@ class TestChatNetwork(unittest.TestCase):
         message = self.network.receive_message()
         self.assertIsNone(message)
     
-    def test_receive_message_failuer(self):
+    def test_receive_message_failure(self):
         """Test receiving a message when the server is unreachable."""
         self.mock_socket.recv.side_effect = Exception("Socket error")
         message = self.network.receive_message()

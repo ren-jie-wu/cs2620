@@ -8,7 +8,7 @@ import threading
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-from server.config import HOST, PORT, PROTOCOL, STORAGE
+from server.config import HOST, PORT, PROTOCOL, STORAGE, BUFFER_SIZE
 from shared.protocol import JSONProtocol, CustomizedProtocol
 from server.storage import MemoryStorage, DatabaseStorage
 from server.request_handler import RequestHandler
@@ -45,14 +45,19 @@ class ChatServer:
         with client_socket:
             try:
                 while True:
-                    data = client_socket.recv(1024)
+                    data = client_socket.recv(BUFFER_SIZE)
                     if not data:
                         break
-                    request = self.protocol.decode(data)
-                    self.verbose_print(f"[REQUEST FROM {addr}] {request}")
-                    response = self.request_handler.process_request(request, client_socket)
-                    self.verbose_print(f"[RESPONSE TO {addr}] {response}")
-                    client_socket.send(self.protocol.encode(response))
+                    requests = self.protocol.decode(data)
+                    if not requests:
+                        response = {"status": "error", "error": "Invalid request"}
+                        self.verbose_print(f"[RESPONSE TO {addr}] {response}")
+                        client_socket.send(self.protocol.encode(response))
+                    for request in requests:
+                        self.verbose_print(f"[REQUEST FROM {addr}] {request}")
+                        response = self.request_handler.process_request(request, client_socket)
+                        self.verbose_print(f"[RESPONSE TO {addr}] {response}")
+                        client_socket.send(self.protocol.encode(response))
             except Exception as e:
                 self.verbose_print(f"[ERROR] {e} occurred with {addr}")
             finally:

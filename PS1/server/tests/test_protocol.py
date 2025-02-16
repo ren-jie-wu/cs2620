@@ -12,7 +12,11 @@ class TestJSONProtocol(unittest.TestCase):
         message = {"action": "send_message", "data": {"message": "Hello", "sender": "Alice"}}
         encoded = self.protocol.encode(message)
         decoded = self.protocol.decode(encoded)
-        self.assertEqual(decoded, message)
+        self.assertEqual(decoded, [message])
+
+        encoded = (self.protocol.encode(message).decode("utf-8") * 2).encode("utf-8")
+        decoded = self.protocol.decode(encoded)
+        self.assertEqual(decoded, [message, message])
 
 
 class TestCustomizedProtocol(unittest.TestCase):

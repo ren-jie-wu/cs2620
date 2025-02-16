@@ -762,7 +762,7 @@ First test the components in isolation, then their integration functionality.
   - [x] request_handler.py (test_request_handler.py)
   - [x] server.py (test_server.py)
   - [x] integration of the server side (test_server_integration.py)
-- [ ] client side
+- [x] client side
 - [ ] integration of server and client
 
 
@@ -780,7 +780,7 @@ open htmlcov/index.html
 #### Testing results
 
 ### Next Steps:
-- [ ] Report test coverage (client & integration)
+- [ ] Report test coverage (integration)
 - [ ] Design and implement a second Protocol; Improve JSON parser
 - [ ] Analyze the two protocols (efficiency, scalability)
 - [ ] Finalize Documentation
