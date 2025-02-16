@@ -64,7 +64,9 @@ On another terminal (or another computer; then both side should set the `HOST` I
 python client/gui.py
 ```
 
-## 🔧 API & Wire Protocol (JSON)
+## 🔧 API & Wire Protocol
+
+### JSON
 The server and client communicate via JSON messages over sockets. Below are the supported actions:
 
 | **Action**         | **Description**                                          | **Request Example** | **Response Example** |
@@ -78,7 +80,11 @@ The server and client communicate via JSON messages over sockets. Below are the 
 | `delete_account`   | Delete user account                                      | `{"action": "delete_account", "data": {"session_token": "xyz"}}` | `{"action": "delete_account", "status": "success"}` |
 | `logout`           | Log out the current user                                 | `{"action": "logout", "data": {"session_token": "xyz"}}` | `{"action": "logout", "status": "success"}` |
 
-They are called by
+### Customized Protocol
+
+TODO...
+
+These APIs are called by
 ``` python
 server.request_handler.process_request(request, client_socket)  # server is a ChatServer object
 ```
@@ -103,7 +109,9 @@ server.request_handler.process_request(request, client_socket)  # server is a Ch
 pytest --cov=. --cov-report=html
 open htmlcov/index.html
 ```
-- Check server logs for debugging.
+- Check server logs for debugging
+
+    Sometimes it reports the port cannot be used or the host is refucing the connection, just change the `PORT` in the `shared/config.py`.
 
 ### 📌 To-Do & Future Enhancements
 - [x] Fix client GUI bug (current GUI sometimes get stuck, probably due to the background thread adding task to the GUI loop (`display_messages` called in `listen_for_messages`))
