@@ -5,14 +5,15 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 from server.storage import MemoryStorage
 from server.request_handler import RequestHandler
-from shared.protocol import JSONProtocol
+from shared.protocol import JSONProtocol, CustomizedProtocol
+from shared.config import PROTOCOL
 
 class TestRequestHandler(unittest.TestCase):
     def setUp(self):
         """Setup mock storage and protocol for testing. This will isolate the RequestHandler from the actual storage and protocol for testing."""
         self.mock_storage = MagicMock(spec=MemoryStorage)
         self.mock_storage.clients = {}
-        self.mock_protocol = MagicMock(spec=JSONProtocol)
+        self.mock_protocol = MagicMock(spec=JSONProtocol if PROTOCOL == "JSON" else CustomizedProtocol)
         self.handler = RequestHandler(self.mock_storage, self.mock_protocol)
     
     def test_create_account_success(self):

@@ -73,6 +73,8 @@ The server and client communicate via JSON messages over sockets. Below are the 
 |--------------------|----------------------------------------------------------|---------------------|----------------------|
 | `create_account`   | Create a new user account                                | `{"action": "create_account", "data": {"username": "user1", "password": "pass"}}` | `{"action": "create_account", "status": "success"}` |
 | `login`            | Log in and receive session token                         | `{"action": "login", "data": {"username": "user1", "password": "pass"}}` | `{"action": "login", "status": "success", "data": {"session_token": "xyz"}}` |
+| `listen`           |
+| `receive_message`  |
 | `send_message`     | Send a message to a user                                 | `{"action": "send_message", "data": {"session_token": "xyz", "recipient": "user2", "message": "Hello!"}}` | `{"action": "send_message", "status": "success"}` |
 | `read_messages`    | Read unread messages                                     | `{"action": "read_messages", "data": {"session_token": "xyz"}}` | `{"action": "read_messages", "status": "success", "data": {"unread_messages": [{"from": "user2", "message": "Hey"}]}}` |
 | `list_accounts`    | List all accounts (supports wildcard search)             | `{"action": "list_accounts", "data": {"session_token": "xyz", "pattern": "user*"}}` | `{"action": "list_accounts", "status": "success", "data": ["user1", "user2"]}` |

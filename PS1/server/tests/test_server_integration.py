@@ -7,7 +7,8 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 from server.server import ChatServer
 from server.config import HOST, PORT, BUFFER_SIZE
-from shared.protocol import JSONProtocol
+from shared.protocol import JSONProtocol, CustomizedProtocol
+from shared.config import PROTOCOL
 
 class TestChatServerIntegration(unittest.TestCase):
     """Integration tests for the full server with real components."""
@@ -24,7 +25,7 @@ class TestChatServerIntegration(unittest.TestCase):
         self.server.storage._clear_db()  # Clear the database before tests
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.client_socket.connect((HOST, PORT))
-        self.protocol = JSONProtocol()
+        self.protocol = JSONProtocol() if PROTOCOL == "JSON" else CustomizedProtocol()
 
     def send_request(self, action, data={}):
         """Helper function to send a request to the server."""

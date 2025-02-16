@@ -781,6 +781,6 @@ open htmlcov/index.html
 
 ### Next Steps:
 - [ ] Report test coverage (integration)
-- [ ] Design and implement a second Protocol; Improve JSON parser
+- [x] Design and implement a second Protocol; Improve JSON parser
 - [ ] Analyze the two protocols (efficiency, scalability)
 - [ ] Finalize Documentation

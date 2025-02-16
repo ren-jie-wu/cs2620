@@ -6,17 +6,18 @@ import os
 import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 from server.server import ChatServer
-from shared.config import HOST, PORT
+from shared.config import HOST, PORT, PROTOCOL
 
 class TestChatServer(unittest.TestCase):
     """Unit tests for the ChatServer class, assuming dependencies are correct."""
 
+    @patch("server.server.CustomizedProtocol")
     @patch("server.server.JSONProtocol")
     @patch("server.server.MemoryStorage")
     @patch("server.server.RequestHandler")
-    def setUp(self, MockRequestHandler, MockStorage, MockProtocol):
+    def setUp(self, MockRequestHandler, MockStorage, MockProtocol, MockProtocol2):
         """Set up a ChatServer with mocked dependencies."""
-        self.mock_protocol = MockProtocol.return_value
+        self.mock_protocol = MockProtocol.return_value if PROTOCOL == "JSON" else MockProtocol2.return_value
         self.mock_storage = MockStorage.return_value
         self.mock_handler = MockRequestHandler.return_value
 
