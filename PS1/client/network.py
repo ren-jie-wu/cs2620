@@ -20,7 +20,7 @@ class ChatNetwork:
             response = self.protocol.decode(self.socket.recv(BUFFER_SIZE))
             return response
         except Exception as e:
-            return {"action": action, "status": "error", "error": f"Network error: {str(e)}"}
+            return {"action": action, "status": "error", "error": f"{str(e.__class__)}: {str(e)}"}
 
     def receive_message(self):
         """Wait for and return a message from the server."""

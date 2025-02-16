@@ -44,11 +44,19 @@ class Storage(ABC):
         pass
 
     @abstractmethod
-    def login(self, username: str, password: str, client_socket):
+    def login(self, username: str, password: str):
         """
         Authenticate the user and create a session.
         Returns (True, None, session_token, unread_count) if successful,
         or (False, error_message, None, None) if not.
+        """
+        pass
+    
+    @abstractmethod
+    def listen(self, username: str, password: str, client_socket):
+        """
+        Authenticate the user, create a session, and associate the client socket.
+        Returns (True, None, session_token) if successful, or (False, error_message, None) if not.
         """
         pass
 
@@ -106,7 +114,7 @@ class Storage(ABC):
         pass
 
     def cleanup_expired_sessions(self):
-        """Periodically clean up expired sessions."""
+        """Periodically clean up expired sessions (close connection, remove from clients and sessions)."""
         while True:
             with self.lock:
                 current_time = time.time()
@@ -144,7 +152,7 @@ class MemoryStorage(Storage):
             self.messages[username] = []
             return True, None
 
-    def login(self, username: str, password: str, client_socket):
+    def login(self, username: str, password: str):
         with self.lock:
             if username not in self.users:
                 return False, "User does not exist", None, None
@@ -153,11 +161,22 @@ class MemoryStorage(Storage):
             session_token = generate_token()
             expiry_time = time.time() + TOKEN_EXPIRY_TIME
             self.sessions[session_token] = {"username": username, "expiry_time": expiry_time}
+            unread_count = len(self.messages.get(username, []))
+            return True, None, session_token, unread_count
+    
+    def listen(self, username: str, password: str, client_socket):
+        with self.lock:
+            if username not in self.users:
+                return False, "User does not exist", None
+            if self.users[username] != hash_password(password):
+                return False, "Incorrect password", None
+            session_token = generate_token()
+            expiry_time = time.time() + TOKEN_EXPIRY_TIME
+            self.sessions[session_token] = {"username": username, "expiry_time": expiry_time}
             if username not in self.clients:
                 self.clients[username] = {}
             self.clients[username][session_token] = client_socket
-            unread_count = len(self.messages.get(username, []))
-            return True, None, session_token, unread_count
+            return True, None, session_token
 
     def validate_session(self, session_token: str):
         with self.lock:
@@ -208,10 +227,10 @@ class MemoryStorage(Storage):
         with self.lock:
             self.users.pop(username, None)
             self.messages.pop(username, None)
-            if username in self.clients:
-                for token in list(self.clients[username].keys()):
-                    self.sessions.pop(token, None)
-                self.clients.pop(username, None)
+            self.clients.pop(username, None)
+            expired_tokens = [token for token, data in self.sessions.items() if data["username"] == username]
+            for token in expired_tokens:
+                self.sessions.pop(token, None)
 
     def logout(self, session_token: str):
         with self.lock:
@@ -280,7 +299,7 @@ class DatabaseStorage(Storage):
             self.conn.commit()
             return True, None
 
-    def login(self, username: str, password: str, client_socket):
+    def login(self, username: str, password: str):
         with self.lock:
             cursor = self.conn.cursor()
             cursor.execute("SELECT password_hash FROM users WHERE username=?", (username,))
@@ -293,12 +312,28 @@ class DatabaseStorage(Storage):
             session_token = generate_token()
             expiry_time = time.time() + TOKEN_EXPIRY_TIME
             self.sessions[session_token] = {"username": username, "expiry_time": expiry_time}
-            if username not in self.clients:
-                self.clients[username] = {}
-            self.clients[username][session_token] = client_socket
             cursor.execute("SELECT COUNT(*) FROM messages WHERE recipient=?", (username,))
             unread_count = cursor.fetchone()[0]
             return True, None, session_token, unread_count
+
+    def listen(self, username: str, password: str, client_socket):
+        with self.lock:
+            cursor = self.conn.cursor()
+            cursor.execute("SELECT password_hash FROM users WHERE username=?", (username,))
+            row = cursor.fetchone()
+            if not row:
+                return False, "User does not exist", None
+            stored_hash = row["password_hash"]
+            if stored_hash != hash_password(password):
+                return False, "Incorrect password", None
+            session_token = generate_token()
+            expiry_time = time.time() + TOKEN_EXPIRY_TIME
+            self.sessions[session_token] = {"username": username, "expiry_time": expiry_time}
+            if username not in self.clients:
+                self.clients[username] = {}
+            self.clients[username][session_token] = client_socket
+            return True, None, session_token
+            
 
     def validate_session(self, session_token: str):
         with self.lock:
@@ -371,10 +406,10 @@ class DatabaseStorage(Storage):
             cursor.execute("DELETE FROM users WHERE username=?", (username,))
             cursor.execute("DELETE FROM messages WHERE recipient=?", (username,))
             self.conn.commit()
-            if username in self.clients:
-                for token in list(self.clients[username].keys()):
-                    self.sessions.pop(token, None)
-                self.clients.pop(username, None)
+            self.clients.pop(username, None)
+            expired_tokens = [token for token, data in self.sessions.items() if data["username"] == username]
+            for token in expired_tokens:
+                self.sessions.pop(token, None)
 
     def logout(self, session_token: str):
         with self.lock:

@@ -32,11 +32,20 @@ class RequestHandler:
         elif action == "login":
             username = data.get("username")
             password = data.get("password")
-            success, error, session_token, unread_count = self.storage.login(username, password, client_socket)
+            success, error, session_token, unread_count = self.storage.login(username, password)
             if success:
                 return {"action": "login", "status": "success", "data": {"session_token": session_token, "unread_message_count": unread_count}}
             else:
                 return {"action": "login", "status": "error", "error": error}
+        
+        elif action == "listen":
+            username = data.get("username")
+            password = data.get("password")
+            success, error, session_token = self.storage.listen(username, password, client_socket)
+            if success:
+                return {"action": "listen", "status": "success", "data": {"session_token": session_token}}
+            else:
+                return {"action": "listen", "status": "error", "error": error}
 
         elif action == "list_accounts":
             session_token = data.get("session_token")

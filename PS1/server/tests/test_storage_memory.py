@@ -3,6 +3,7 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 from server.storage import MemoryStorage
+from unittest.mock import MagicMock
 
 class TestMemoryStorage(unittest.TestCase):
     def setUp(self):
@@ -21,20 +22,32 @@ class TestMemoryStorage(unittest.TestCase):
     
     def test_login(self):
         self.storage.create_account("alice", "password123")
-        success, error, token, unread_count = self.storage.login("alice", "password123", None)
+        success, error, token, unread_count = self.storage.login("alice", "password123")
         self.assertTrue(success)
         self.assertIsNotNone(token)
         self.assertEqual(unread_count, 0)
 
         # Invalid username
-        success, error, _, _ = self.storage.login("invaliduser", "password123", None)
+        success, error, _, _ = self.storage.login("invaliduser", "password123")
         self.assertFalse(success)
         self.assertEqual(error, "User does not exist")
 
         # Wrong password
-        success, error, _, _ = self.storage.login("alice", "wrongpass", None)
+        success, error, _, _ = self.storage.login("alice", "wrongpass")
         self.assertFalse(success)
         self.assertEqual(error, "Incorrect password")
+    
+    def test_listen(self):
+        self.storage.create_account("alice", "password123")
+        success, error, token = self.storage.listen("alice", "password123", MagicMock())
+        self.assertTrue(success)
+        self.assertIsNotNone(token)
+        self.assertIn(token, self.storage.clients['alice'])
+
+        success, error, token = self.storage.listen("alice0", "password123", MagicMock())
+        self.assertFalse(success)
+        success, error, token = self.storage.listen("alice", "password1234", MagicMock())
+        self.assertFalse(success)
     
     def test_list_accounts(self):
         self.storage.create_account("alice", "password123")
@@ -83,17 +96,17 @@ class TestMemoryStorage(unittest.TestCase):
     
     def test_logout(self):
         self.storage.create_account("alice", "password123")
-        success, error, token, _ = self.storage.login("alice", "password123", None)
+        success, error, token, _ = self.storage.login("alice", "password123")
         self.storage.logout(token)
     
     def test_delete_account(self):
         self.storage.create_account("alice", "password123")
-        self.storage.login("alice", "password123", None)
+        self.storage.login("alice", "password123")
         self.storage.delete_account("alice")
     
     def test_validate_session(self):
         self.storage.create_account("alice", "password123")
-        success, error, token, _ = self.storage.login("alice", "password123", None)
+        success, error, token, _ = self.storage.login("alice", "password123")
         self.assertEqual(self.storage.validate_session(token), "alice")
         self.storage.logout(token)
         self.assertIsNone(self.storage.validate_session(token))

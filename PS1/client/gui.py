@@ -83,7 +83,7 @@ class ChatClient:
         # This can successfully solve the problem of getting stuck for no reason (probably 
         # due to hearing with the same socket in the main thread and the background)
         self.background_connection = self.network()
-        response = self.background_connection.send_request("login", {"username": username, "password": password})
+        response = self.background_connection.send_request("listen", {"username": username, "password": password})
         if response["status"] == "success":
             self.background_session_token = response["data"]["session_token"]
         else:
@@ -99,20 +99,17 @@ class ChatClient:
 
     def display_messages(self, messages, append=False):
         """Update the chat display with new messages (from latest to earliest)."""
-        # The display_messages method can be called from a background thread, 
-        # so we need to ensure that the GUI update happens in the main thread.
-        def task():
-            self.chat_display.config(state=tk.NORMAL)
-            if append:
-                for message in messages:
-                    self.chat_display.insert(tk.END, message)
-            else:
-                for message in messages[::-1]:
-                    self.chat_display.insert("1.0", message)
+        self.chat_display.config(state=tk.NORMAL)
+        if append:
+            for message in messages:
+                self.chat_display.insert(tk.END, message)
             self.chat_display.insert(tk.END, "-"*50 + "\n")
-            self.chat_display.config(state=tk.DISABLED)
-
-        self.root.after(1, task)
+        else:
+            self.chat_display.insert("1.0", "-"*50 + "\n")
+            for message in messages[::-1]:
+                self.chat_display.insert("1.0", message)
+        
+        self.chat_display.config(state=tk.DISABLED)
 
     def create_account(self):
         """Handle account creation."""
@@ -214,28 +211,17 @@ class ChatClient:
         self.account_page += direction
         window.destroy()
         self.fetch_accounts(x, y)
-
-    def edit_message_entry(self, action, *args, **kwargs):
-        """Edit the message entry box allowing GUI loop arrangement."""
-        def task():
-            if action == "delete":
-                self.message_entry.delete(*args, **kwargs)
-            elif action == "insert":
-                self.message_entry.insert(*args, **kwargs)
-        
-        self.root.after(1, task)
     
     def send_message(self):
         """Send a message to a recipient."""
         recipient = simpledialog.askstring("Recipient", "Enter recipient username:")
         message = self.message_entry.get()
-
         if recipient and message:
             response = self.connection.send_request("send_message", {"session_token": self.session_token, "recipient": recipient, "message": message})
 
             if response.get("status") == "success":
                 self.display_messages([f"You -> {recipient}: {message}\n"])
-                self.edit_message_entry("delete", 0, tk.END)
+                self.message_entry.delete(0, tk.END)
             else:
                 messagebox.showerror("Error", response.get("error"))
 
@@ -246,7 +232,7 @@ class ChatClient:
         if response.get("status") == "success":
             unread_messages = response.get("data", {}).get("unread_messages")
             if unread_messages:
-                self.display_messages([f"{msg['from']} -> You: {msg['message']}\n" for msg in unread_messages])
+                self.display_messages([f"{msg['from']} -> You: {msg['message']}\n" for msg in unread_messages], append=True)
             else:
                 messagebox.showinfo("No Messages", "No new messages.")
         else:
