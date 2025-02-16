@@ -7,7 +7,7 @@ import unittest
 from unittest.mock import MagicMock
 import tkinter as tk
 from client.gui import ChatClient
-from utils import disable_messagebox, enable_messagebox, set_askstring, setback_askstring, set_askinteger, setback_askinteger, debug
+from utils import disable_messagebox, enable_messagebox, set_askstring, setback_askstring, set_askinteger, setback_askinteger
 
 class TestChatClient(unittest.TestCase):
     def setUp(self):
@@ -15,7 +15,7 @@ class TestChatClient(unittest.TestCase):
         disable_messagebox()
         self.root = tk.Tk()
         self.client = ChatClient(self.root, network=MagicMock)  # Use mocked network
-    
+
     def tearDown(self):
         """Destroy Tkinter root after each test."""
         self.root.destroy()
