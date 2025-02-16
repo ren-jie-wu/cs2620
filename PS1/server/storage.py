@@ -257,6 +257,10 @@ class DatabaseStorage(Storage):
         self._initialize_db()
         
     def _initialize_db(self):
+        """
+        Initialize the database schema on startup, if not already present.
+        Uses a lock to ensure thread safety.
+        """
         with self.lock:
             cursor = self.conn.cursor()
             cursor.execute('''
@@ -276,6 +280,10 @@ class DatabaseStorage(Storage):
             self.conn.commit()
     
     def _clear_db(self):
+        """
+        Clear the database of all users and messages. This is used for testing
+        and should not be called in production.
+        """
         with self.lock:
             cursor = self.conn.cursor()
             cursor.execute("DELETE FROM users")

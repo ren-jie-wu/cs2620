@@ -15,6 +15,18 @@ from server.request_handler import RequestHandler
 
 class ChatServer:
     def __init__(self, host=HOST, port=PORT, verbose=True):
+        """
+        Initialize the server with the given host and port.
+        
+        Parameters
+        ----------
+        host : str
+            The host to listen on.
+        port : int
+            The port to listen on.
+        verbose : bool
+            Whether to print verbose messages.
+        """
         self.host = host
         self.port = port
         self.verbose = verbose
@@ -24,12 +36,42 @@ class ChatServer:
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     
     def verbose_print(self, *args, **kwargs):
+        """
+        Print messages if verbose mode is enabled.
+        
+        Parameters
+        ----------
+        *args : mixed
+            The arguments to be passed to the print function.
+        **kwargs : mixed
+            The keyword arguments to be passed to the print function.
+        """
         if self.verbose:
             print(*args, **kwargs)
         else:
             pass
 
     def start(self):
+        """
+        Start the server by binding the socket to the given host and port, 
+        listen for incoming connections, and spawn a new thread for each 
+        connection to handle the client request.
+
+        When a new connection is established, print a message that a new 
+        connection is established.
+
+        The server runs in an infinite loop until a KeyboardInterrupt is 
+        encountered. When the server is stopped, print a message that the 
+        server has stopped and exit.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        """
         self.server_socket.bind((self.host, self.port))
         self.server_socket.listen(5)
         self.verbose_print(f"[SERVER STARTED] Listening on {self.host}:{self.port}")
@@ -42,6 +84,29 @@ class ChatServer:
             self.verbose_print("\n[SERVER STOPPED] Exiting...")
 
     def handle_client(self, client_socket, addr):
+        """
+        Handle an incoming connection from a client.
+        
+        Parameters
+        ----------
+        client_socket : socket
+            The socket object of the client connection.
+        addr : tuple
+            The address of the client.
+        
+        Returns
+        -------
+        None
+        
+        Notes
+        -----
+        Runs in an infinite loop until a KeyboardInterrupt is encountered.
+        When an invalid request is received, an error response is sent back to
+        the client. When an exception occurs during request processing, the
+        exception is printed to the console and the connection is closed.
+        Finally, when the connection is closed, a message is printed to the
+        console to indicate that the connection has been closed.
+        """
         with client_socket:
             try:
                 while True:

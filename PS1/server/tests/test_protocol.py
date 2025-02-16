@@ -6,9 +6,18 @@ from shared.protocol import JSONProtocol, CustomizedProtocol
 
 class TestJSONProtocol(unittest.TestCase):
     def setUp(self):
+        """
+        Set up the test by initializing the protocol instance.
+        """
         self.protocol = JSONProtocol()
 
     def test_encode_decode(self):
+        """
+        Test the encoding and decoding functions of the protocol.
+        
+        The first test checks a single message, while the second test checks
+        two messages concatenated together.
+        """
         message = {"action": "send_message", "data": {"message": "Hello", "sender": "Alice"}}
         encoded = self.protocol.encode(message)
         decoded = self.protocol.decode(encoded)
@@ -22,6 +31,5 @@ class TestJSONProtocol(unittest.TestCase):
 class TestCustomizedProtocol(unittest.TestCase):
     def setUp(self):
         self.protocol = CustomizedProtocol()
-
-    def test_encode_decode(self):
-        pass
+    
+    # Simply inherit the JSONProtocol test cases

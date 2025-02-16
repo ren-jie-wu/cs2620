@@ -11,10 +11,33 @@ from server.storage import Storage
 
 class RequestHandler:
     def __init__(self, storage: Storage, protocol: Protocol):
+        """
+        Initialize the RequestHandler with the given storage and protocol.
+
+        :param storage: the Storage object to use for data operations
+        :param protocol: the Protocol object to use for encoding/decoding
+        """
         self.storage = storage
         self.protocol = protocol
 
     def process_request(self, request: dict, client_socket) -> dict:
+        """
+        Process an incoming request and return a response dictionary.
+
+        This function takes the request dictionary and client socket as input,
+        and returns a response dictionary according to the action specified in
+        the request.
+
+        It will call the corresponding method in self.storage and return the
+        result in the response dictionary.
+
+        If the request is invalid or the action is unsupported, it will return
+        a response with status "error" and an appropriate error message.
+
+        :param request: The request dictionary
+        :param client_socket: The socket object of the client
+        :return: A response dictionary
+        """
         action = request.get("action")
         data = request.get("data", {})
 

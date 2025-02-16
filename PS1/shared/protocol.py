@@ -3,13 +3,31 @@
 # Changing protocols later will only require implementing a new subclass.
 
 import json
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List
 
 class Protocol:
     def encode(self, message: Dict[str, Any]) -> bytes:
+        """
+        Encode a message dictionary to bytes.
+
+        Args:
+        message (Dict[str, Any]): Message to encode.
+
+        Returns:
+        bytes: Encoded message.
+        """
         raise NotImplementedError
 
-    def decode(self, bytes: bytes) -> Union[Dict[str, Any] | List[Dict[str, Any]]]:
+    def decode(self, bytes: bytes) -> List[Dict[str, Any]]:
+        """
+        Decode a bytes object to a list of message dictionaries.
+
+        Args:
+        bytes (bytes): Encoded message(s).
+
+        Returns:
+        List[Dict[str, Any]]: A list of decoded message dictionaries.
+        """
         raise NotImplementedError
 
 class JSONProtocol(Protocol):
@@ -81,6 +99,18 @@ class CustomizedProtocol(Protocol):
         return messages
 
     def parse_components(self, msg_text: str):
+        """
+        Parse the given message text into its components.
+
+        The components are:
+        - action: The action that the message represents (e.g. "create_account", "login", etc.)
+        - status: The status of the message (e.g. "success", "error", etc.)
+        - error: The error message if the status is "error"
+        - data: The data associated with the message
+
+        :param msg_text: The message text to parse
+        :return: A dictionary with the components of the message
+        """
         action = msg_text[0:2]
         status = msg_text[2:4]
         remainder = msg_text[4:]
@@ -108,3 +138,32 @@ class CustomizedProtocol(Protocol):
         if data:
             output["data"] = data
         return output
+
+if __name__ == "__main__":
+    json_protocol = JSONProtocol()
+    custom_protocol = CustomizedProtocol()
+
+    # Test Messages
+    test_cases = {
+        "Login Request": {"action": "login", "data": {"username": "alice", "password": "securepass"}},
+        "Send Message Request": {"action": "send_message", "data": {"recipient": "bob", "message": "Hello, Bob!"}},
+        "List Accounts Response": {
+            "action": "list_accounts",
+            "status": "success",
+            "data": {"accounts": ["alice", "bob", "charlie", "dave", "eve"]}
+        }
+    }
+
+    # Measure size for each protocol
+    print(f"|{'Case':<25}|{'JSONProtocol (bytes)':<25}|{'CustomizedProtocol (bytes)':<30}|{'Reduction (%)':<20}|")
+    print(f"|{'-'*25}|{'-'*25}|{'-'*30}|{'-'*20}|")
+
+    for scenario, message in test_cases.items():
+        json_encoded = json_protocol.encode(message)
+        custom_encoded = custom_protocol.encode(message)
+
+        json_size = len(json_encoded)
+        custom_size = len(custom_encoded)
+        reduction = (1 - (custom_size / json_size)) * 100  # Percentage reduction
+
+        print(f"|{scenario:<25}|{json_size:<25}|{custom_size:<30}|{str(round(reduction, 1))+'%':<20}|")

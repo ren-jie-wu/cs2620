@@ -11,6 +11,12 @@ class TestMemoryStorage(unittest.TestCase):
         self.storage = MemoryStorage()
     
     def test_create_account(self):
+        """
+        Test account creation in memory storage.
+        
+        It creates a new account, tests for successful creation, and tests for
+        duplicate username.
+        """
         success, error = self.storage.create_account("alice", "password123")
         self.assertTrue(success)
         self.assertIsNone(error)
@@ -21,6 +27,11 @@ class TestMemoryStorage(unittest.TestCase):
         self.assertEqual(error, "Username already exists")
     
     def test_login(self):
+        """
+        Test logging in to memory storage.
+        
+        It tests for successful login, invalid username, and wrong password.
+        """
         self.storage.create_account("alice", "password123")
         success, error, token, unread_count = self.storage.login("alice", "password123")
         self.assertTrue(success)
@@ -38,6 +49,11 @@ class TestMemoryStorage(unittest.TestCase):
         self.assertEqual(error, "Incorrect password")
     
     def test_listen(self):
+        """
+        Test listening to a client socket in memory storage.
+        
+        It tests for successful login to listen, invalid username, and wrong password.
+        """
         self.storage.create_account("alice", "password123")
         success, error, token = self.storage.listen("alice", "password123", MagicMock())
         self.assertTrue(success)
@@ -50,6 +66,11 @@ class TestMemoryStorage(unittest.TestCase):
         self.assertFalse(success)
     
     def test_list_accounts(self):
+        """
+        Test listing accounts in memory storage.
+        
+        It tests listing all accounts in two pages.
+        """
         self.storage.create_account("alice", "password123")
         self.storage.create_account("bob", "password123")
         self.storage.create_account("charlie", "password123")
@@ -61,6 +82,11 @@ class TestMemoryStorage(unittest.TestCase):
         self.assertEqual(total_pages, 2)
     
     def test_add_and_retrieve_messages(self):
+        """
+        Test adding and retrieving messages in memory storage.
+        
+        It tests adding multiple messages, retrieving the latest message, retrieving multiple messages from the latest, retrieving multiple messages from the earliest, and the remaining message count.
+        """
         self.storage.create_account("bob", "password")
         self.storage.add_message("bob", {"from": "alice", "message": "Hello Bob!"})
         self.storage.add_message("bob", {"from": "alice", "message": "How are you?"})
@@ -82,6 +108,11 @@ class TestMemoryStorage(unittest.TestCase):
         self.assertEqual(remaining, 2)
     
     def test_delete_messages(self):
+        """
+        Test deleting messages in memory storage.
+
+        It tests deleting two messages, deleting messages from the earliest, and deleting messages from the latest.
+        """
         self.storage.create_account("bob", "password")
         self.storage.add_message("bob", {"from": "alice", "message": "Hello Bob!"})
         self.storage.add_message("bob", {"from": "alice", "message": "How are you?"})
@@ -95,16 +126,32 @@ class TestMemoryStorage(unittest.TestCase):
         self.assertEqual(count, 2)
     
     def test_logout(self):
+        """
+        Test logging out in memory storage.
+
+        It tests logging out a user, given a valid session token.
+        """
         self.storage.create_account("alice", "password123")
         success, error, token, _ = self.storage.login("alice", "password123")
         self.storage.logout(token)
     
     def test_delete_account(self):
+        """
+        Test deleting an account in memory storage.
+
+        It tests deleting an account, given that the user is logged in.
+        """
         self.storage.create_account("alice", "password123")
         self.storage.login("alice", "password123")
         self.storage.delete_account("alice")
     
     def test_validate_session(self):
+        """
+        Test validating a session in memory storage.
+
+        It tests validating a session, given a valid session token,
+        and validating a session after logging out.
+        """
         self.storage.create_account("alice", "password123")
         success, error, token, _ = self.storage.login("alice", "password123")
         self.assertEqual(self.storage.validate_session(token), "alice")

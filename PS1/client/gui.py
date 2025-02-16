@@ -12,6 +12,12 @@ from client.config import PAGE_SIZE, MSG_NUM, REFRESH_INTERVAL
 
 class ChatClient:
     def __init__(self, root, network=ChatNetwork):
+        """
+        Initialize a new ChatClient instance.
+
+        :param root: The Tk root window to contain the chat UI.
+        :param network: The network class to use for communication with the server.
+        """
         self.root = root
         self.root.title("Chat System") 
         self.network = network       
@@ -168,6 +174,7 @@ class ChatClient:
     
 
     def create_account_window(self, result_text, page, total_pages, x=None, y=None):
+        """Create a toplevel window for displaying paginated account listings."""
         account_window = tk.Toplevel(self.root)
         account_window.title("Account List")
         account_window.geometry(f"300x250+{x}+{y}" if x and y else "300x250")  # Set a fixed size for the window

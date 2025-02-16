@@ -1,5 +1,7 @@
 ## Problem Analysis and Planning
 
+## Plans
+
 ### 1. High-Level Design
 
 #### Components
@@ -777,10 +779,12 @@ This will generate a html report, which can be reached by
 open htmlcov/index.html
 ```
 
-#### Testing results
+### 10. Customized Protocol
 
-### Next Steps:
-- [ ] Report test coverage (integration)
-- [x] Design and implement a second Protocol; Improve JSON parser
-- [ ] Analyze the two protocols (efficiency, scalability)
-- [ ] Finalize Documentation
+Specified in [`README.md`](README.md).
+
+When converting dict to str, do not use `str` or `repr` directly - this will introduce bug in `json.loads` in the future. (json.decoder.JSONDecodeError: Expecting property name enclosed in double quotes: line 1 column 2 (char 1))
+
+### Comments on the Two Protocols
+
+See [`README.md`](README.md).

@@ -10,6 +10,7 @@ class TestDatabaseStorage(TestMemoryStorage):
         self.storage = DatabaseStorage()
         self.storage._clear_db()
     
+    # Simply clear the database after each test
     def test_create_account(self):
         super().test_create_account()
         self.storage._clear_db()
