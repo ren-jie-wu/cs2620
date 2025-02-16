@@ -92,14 +92,14 @@ The server and client communicate via JSON messages over sockets. Below are the 
 
 Customized protocol is a more compact and efficient binary-like protocol designed to replace standard JSON messaging. Each message follows this structure:
 ```
-[length]:[action][status][error_length]:[error][data]
+[length]:[action][status][error][data]
 ```
 | **Field**  | **Description**	                                        | **Example**           |
 |------------|----------------------------------------------------------|-----------------------|
 | [length]   | Length of the entire message (excluding itself)	        | "21"                  |
 | [action]   | Encoded action (10-19 for known actions, 00 if unknown)	| "12" (list_accounts)  |
 | [status]   | "11" = success, "10" = error, "00" = request (no status)	| "11"                  |
-| [error]    | Length-prefixed error message ("0" if none)	            | "0" (no error)        |
+| [error]    | Length-prefixed error message ("0" if none)	            | "0" (no error) or "16:Connection Error"|
 | [data]	 | JSON-encoded data ("0" if none)	                        | "{\"key\": \"value\"}"|
 
 Supported actions:
@@ -187,26 +187,25 @@ open htmlcov/index.html
 | client/gui.py | 195 | 4   | 0   | 98% |
 | client/network.py | 28  | 0   | 0   | 100% |
 | client/tests/test\_gui.py | 135 | 0   | 0   | 100% |
-| client/tests/test\_network.py | 43  | 0   | 0   | 100% |
+| client/tests/test\_network.py | 39  | 0   | 0   | 100% |
 | client/tests/utils.py | 22  | 0   | 0   | 100% |
 | server/\_\_init\_\_.py | 0   | 0   | 0   | 100% |
 | server/config.py | 8   | 0   | 0   | 100% |
 | server/request\_handler.py | 108 | 0   | 0   | 100% |
 | server/server.py | 57  | 4   | 0   | 93% |
 | server/storage.py | 296 | 13  | 0   | 96% |
-| server/tests/test\_protocol.py | 21  | 0   | 0   | 100% |
+| server/tests/test\_protocol.py | 19  | 1   | 0   | 95% |
 | server/tests/test\_request\_handler.py | 183 | 0   | 0   | 100% |
 | server/tests/test\_server.py | 76  | 0   | 0   | 100% |
-| server/tests/test\_server\_integration.py | 67  | 0   | 0   | 100% |
+| server/tests/test\_server\_integration.py | 66  | 0   | 0   | 100% |
 | server/tests/test\_storage\_db.py | 36  | 0   | 0   | 100% |
 | server/tests/test\_storage\_memory.py | 89  | 0   | 0   | 100% |
 | server/tests/test\_storage\_session\_cleanup.py | 27  | 0   | 0   | 100% |
 | server/utils.py | 6   | 0   | 0   | 100% |
 | shared/\_\_init\_\_.py | 0   | 0   | 0   | 100% |
 | shared/config.py | 3   | 0   | 0   | 100% |
-| shared/protocol.py | 78  | 5   | 0   | 94% |
-| shared/utils.py | 3   | 0   | 0   | 100% |
-| Total | 1489 | 26  | 0   | 98% |
+| shared/protocol.py | 93  | 18  | 0   | 81% |
+| Total | 1494 | 40  | 0   | 97% |
 
 
 ## 📄 License

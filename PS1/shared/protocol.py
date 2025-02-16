@@ -139,7 +139,8 @@ class CustomizedProtocol(Protocol):
             output["data"] = data
         return output
 
-if __name__ == "__main__":
+def test():
+    """This is for testing purposes only. The results are showed in the README.md file."""
     json_protocol = JSONProtocol()
     custom_protocol = CustomizedProtocol()
 
@@ -167,3 +168,6 @@ if __name__ == "__main__":
         reduction = (1 - (custom_size / json_size)) * 100  # Percentage reduction
 
         print(f"|{scenario:<25}|{json_size:<25}|{custom_size:<30}|{str(round(reduction, 1))+'%':<20}|")
+
+if __name__ == "__main__":
+    test()
