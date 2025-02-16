@@ -748,6 +748,10 @@ It's observed that the client gui often breaks down, and it should have nothing 
 
 This is probably because the same connection is used in the two thread: the main thread for GUI uses this connection to send all the proactive request to the client and receive corresponding responses; while the background thread also uses this connection to constantly listen to the server for the real-time delivered messages. This is solved by adding another connection when logged in for the background thread.
 
+This involves the addition of `ChatClient.background_connection` in the client gui, as well as a new API `listen` in the server side, so that the connection in the main thread will never receive the real-time messages (response with action of `receive_message`). If we don't separate the two APIs (`listen` and `login`) the main thread is still possible to receive the messages and then the socket can sometimes receive two or more response dictionaries at the same time, resulting in json decoding error.
+
+Another problem is that if there are a lot of in-coming messages at the same time, it's possible that the decoded bytes are a stream of dicts, and the `json.load` would fail to parse it. This will need an advanced parser.
+
 ### 9. Testing with `unittest`
 
 #### Testing Components
@@ -777,6 +781,6 @@ open htmlcov/index.html
 
 ### Next Steps:
 - [ ] Report test coverage (client & integration)
-- [ ] Design and implement a second Protocol
+- [ ] Design and implement a second Protocol; Improve JSON parser
 - [ ] Analyze the two protocols (efficiency, scalability)
 - [ ] Finalize Documentation

@@ -1,4 +1,5 @@
 # client/gui.py
+import time
 import os
 import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
@@ -6,7 +7,7 @@ import tkinter as tk
 from tkinter import messagebox, simpledialog
 import threading
 from client.network import ChatNetwork
-from client.config import PAGE_SIZE, MSG_NUM
+from client.config import PAGE_SIZE, MSG_NUM, REFRESH_INTERVAL
 
 
 class ChatClient:
@@ -38,7 +39,7 @@ class ChatClient:
         tk.Button(self.root, text="Log In", command=self.login).pack()
         tk.Button(self.root, text="Create Account", command=self.create_account).pack()
 
-    def build_chat_screen(self):
+    def build_chat_screen(self, background=True):
         """Create the main chat UI after login."""
         username = self.username_entry.get()
         password = self.password_entry.get()
@@ -73,16 +74,18 @@ class ChatClient:
         # Logout button
         tk.Button(self.root, text="Log Out", command=self.logout).pack(pady=10)
 
-        self.running = True
-        self.listener_thread = threading.Thread(target=self.listen_for_messages, args=(username, password), daemon=True)
-        self.listener_thread.start()
+        if background:
+            self.running = True
+            self.background_connection = self.network()
+            self.listener_thread = threading.Thread(target=self.listen_for_messages, args=(username, password), daemon=True)
+            self.listener_thread.start()
 
-    def listen_for_messages(self, username, password):
+    def listen_for_messages(self, username, password, refresh_interval=REFRESH_INTERVAL):
         """Background thread that listens for incoming messages."""
         # Create a new connection for background thread
         # This can successfully solve the problem of getting stuck for no reason (probably 
         # due to hearing with the same socket in the main thread and the background)
-        self.background_connection = self.network()
+        
         response = self.background_connection.send_request("listen", {"username": username, "password": password})
         if response["status"] == "success":
             self.background_session_token = response["data"]["session_token"]
@@ -96,6 +99,7 @@ class ChatClient:
                 sender = response["data"]["sender"]
                 message = response["data"]["message"]
                 self.display_messages([f"[NEW] {sender} -> You: {message}\n"])
+            time.sleep(refresh_interval)
 
     def display_messages(self, messages, append=False):
         """Update the chat display with new messages (from latest to earliest)."""
@@ -232,7 +236,7 @@ class ChatClient:
         if response.get("status") == "success":
             unread_messages = response.get("data", {}).get("unread_messages")
             if unread_messages:
-                self.display_messages([f"{msg['from']} -> You: {msg['message']}\n" for msg in unread_messages], append=True)
+                self.display_messages([f"{msg['sender']} -> You: {msg['message']}\n" for msg in unread_messages], append=True)
             else:
                 messagebox.showinfo("No Messages", "No new messages.")
         else:

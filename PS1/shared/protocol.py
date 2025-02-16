@@ -18,6 +18,7 @@ class JSONProtocol(Protocol):
 
     def decode(self, data: bytes) -> Dict[str, Any]:
         return json.loads(data.decode("utf-8"))
+        #TODO: handle json stream
 
 class CustomizedProtocol(Protocol):
     def encode(self, message: Dict[str, Any]) -> bytes:
