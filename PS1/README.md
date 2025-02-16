@@ -106,7 +106,7 @@ open htmlcov/index.html
 - Check server logs for debugging.
 
 ### 📌 To-Do & Future Enhancements
-- [ ] Fix client GUI bug (current GUI sometimes get stuck, probably due to the background thread adding task to the GUI loop (`display_messages` called in `listen_for_messages`))
+- [x] Fix client GUI bug (current GUI sometimes get stuck, probably due to the background thread adding task to the GUI loop (`display_messages` called in `listen_for_messages`))
 - [ ] Report test coverage (client & integration left)
 - [ ] Design and implement a second protocol other than JSON
 - [ ] Analyze the two protocols (efficiency, scalability)

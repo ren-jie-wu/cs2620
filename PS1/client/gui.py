@@ -17,6 +17,8 @@ class ChatClient:
         self.connection = network()
         self.background_connection = None
         self.session_token = None
+        self.background_session_token = None
+        self.running = False
 
         self.build_login_screen()
 
@@ -81,7 +83,13 @@ class ChatClient:
         # This can successfully solve the problem of getting stuck for no reason (probably 
         # due to hearing with the same socket in the main thread and the background)
         self.background_connection = self.network()
-        self.background_connection.send_request("login", {"username": username, "password": password})
+        response = self.background_connection.send_request("login", {"username": username, "password": password})
+        if response["status"] == "success":
+            self.background_session_token = response["data"]["session_token"]
+        else:
+            messagebox.showerror("Error", response["error"])
+            self.running = False
+            return
         while self.running:
             response = self.background_connection.receive_message()
             if response and response.get("action") == "receive_message":
@@ -89,15 +97,19 @@ class ChatClient:
                 message = response["data"]["message"]
                 self.display_messages([f"[NEW] {sender} -> You: {message}\n"])
 
-    def display_messages(self, messages):
-        """Update the chat display with a new message."""
+    def display_messages(self, messages, append=False):
+        """Update the chat display with new messages (from latest to earliest)."""
         # The display_messages method can be called from a background thread, 
         # so we need to ensure that the GUI update happens in the main thread.
         def task():
             self.chat_display.config(state=tk.NORMAL)
-            self.chat_display.insert("1.0", "-"*50 + "\n")
-            for message in messages[::-1]:  # Reverse order to display earliest message at the bottom
-                self.chat_display.insert("1.0", message)
+            if append:
+                for message in messages:
+                    self.chat_display.insert(tk.END, message)
+            else:
+                for message in messages[::-1]:
+                    self.chat_display.insert("1.0", message)
+            self.chat_display.insert(tk.END, "-"*50 + "\n")
             self.chat_display.config(state=tk.DISABLED)
 
         self.root.after(1, task)
@@ -270,14 +282,15 @@ class ChatClient:
         """Log out the user and return to login screen."""
         if messagebox.askyesno("Confirm", "Are you sure you want to log out?"):
             self.running = False  # Stop listener thread
-            response = self.connection.send_request("logout", {"session_token": self.session_token})
+            response1 = self.connection.send_request("logout", {"session_token": self.session_token})
+            response2 = self.background_connection.send_request("logout", {"session_token": self.background_session_token})
 
-            if response["status"] == "success":
+            if response1["status"] == "success" and response2["status"] == "success":
                 self.session_token = None
                 messagebox.showinfo("Logged Out", "You have been logged out.")
                 self.build_login_screen()
             else:
-                messagebox.showerror("Error", response["error"])
+                messagebox.showerror("Error", response1["error"] or response2["error"])
 
 if __name__ == "__main__":
     root = tk.Tk()

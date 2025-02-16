@@ -744,7 +744,9 @@ This is implemented through a `ChatClient.listen_for_messages` function in the `
 
 It's observed that the client gui often breaks down, and it should have nothing to do with the server side, since from the server output we can see that the requests and responses are correctly delivered, but the gui just got stuck. After removing the background thread checking coming-in messages it won't get stuck. Probably this needs to be optimized.
 
-- [ ] Optimize background thread
+- [x] Optimize background thread
+
+This is probably because the same connection is used in the two thread: the main thread for GUI uses this connection to send all the proactive request to the client and receive corresponding responses; while the background thread also uses this connection to constantly listen to the server for the real-time delivered messages. This is solved by adding another connection when logged in for the background thread.
 
 ### 9. Testing with `unittest`
 
@@ -774,7 +776,6 @@ open htmlcov/index.html
 #### Testing results
 
 ### Next Steps:
-- [ ] Fix client GUI bug
 - [ ] Report test coverage (client & integration)
 - [ ] Design and implement a second Protocol
 - [ ] Analyze the two protocols (efficiency, scalability)
