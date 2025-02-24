@@ -1,6 +1,6 @@
 # PS1 - Chat System
 
-A simple client-server chat application that allows users to send and receive messages over sockets using JSON for communication. The server manages user authentication, message storage, and real-time message delivery.
+A simple client-server chat application that allows users to send and receive messages over sockets using JSON or customized protocol for communication. The server manages user authentication, message storage, and real-time message delivery.
 
 ## 🚀 Features
 
@@ -46,9 +46,22 @@ cd cs2620/PS1
 ```
 
 ### Install Dependencies
+All involved packages should be included within Python's standard library; but some Python installation does not include `Tkinter` support. To ensure `Tkinter` is installed:
+- On Ubuntu/Debian: `sudo apt install python3-tk`
+- On MacOS (Homebrew Python): `brew install python-tk`
+- On Windows: Python from python.org includes Tkinter by default.
+
+If you prefer install it in an environment instead of system-wide, simply install Python and it should include `Tkinter` (here use micromamba as an example):
 ``` bash
-pip install -r requirements.txt
+micromamba create -y -n [env_name] python
+micromamba activate [env_name]
 ```
+
+To verify if `Tkinter` is available, run
+``` bash
+python3 -m tkinter
+```
+This would pop out a window without error if `Tkinter` is available.
 
 ### Configure Server & Client
 In [`shared/config.py`](shared/config.py), configure the host, port, and protocol to use. This is shared between server and client.
@@ -82,7 +95,7 @@ The server and client communicate via JSON messages over sockets. Below are the 
 | `listen`           | Keep a background connection to listen real-time messages| `{"action": "listen", "data": {"username": "user1", "password": "pass"}}` | `{"action": "login", "status": "success", "data": {"session_token": "xyz"}}` |
 | `receive_message`  | Receive real-time messages                               | (No need to request) | `{"action": "receive_message", "data": {"sender": sender, "message": message}}`
 | `send_message`     | Send a message to a user                                 | `{"action": "send_message", "data": {"session_token": "xyz", "recipient": "user2", "message": "Hello!"}}` | `{"action": "send_message", "status": "success"}` |
-| `read_messages`    | Read unread messages                                     | `{"action": "read_messages", "data": {"session_token": "xyz"}}` | `{"action": "read_messages", "status": "success", "data": {"unread_messages": [{"from": "user2", "message": "Hey"}]}}` |
+| `read_messages`    | Read unread messages                                     | `{"action": "read_messages", "data": {"session_token": "xyz"}}` | `{"action": "read_messages", "status": "success", "data": {"unread_messages": [{"sender": "user2", "message": "Hey"}]}}` |
 | `list_accounts`    | List all accounts (supports wildcard search)             | `{"action": "list_accounts", "data": {"session_token": "xyz", "pattern": "user*"}}` | `{"action": "list_accounts", "status": "success", "data": ["user1", "user2"]}` |
 | `delete_messages`  | Delete unread messages                                   | `{"action": "delete_messages", "data": {"session_token": "xyz", "num_to_delete": 2}}` | `{"action": "delete_messages", "status": "success"}` |
 | `delete_account`   | Delete user account                                      | `{"action": "delete_account", "data": {"session_token": "xyz"}}` | `{"action": "delete_account", "status": "success"}` |
@@ -169,10 +182,14 @@ server.request_handler.process_request(request, client_socket)  # server is a Ch
 4. Discuss & merge changes.
 
 ### 📌 Testing
+- Before testing, ensure `pytest-cov` is installed by
+``` bash
+pip install pytest-cov
+```
 - Run unit tests and view the coverage report by
 ``` bash
 pytest --cov=. --cov-report=html
-open htmlcov/index.html
+open htmlcov/index.html  # use `start` command in Windows
 ```
 - Check server logs for debugging
 

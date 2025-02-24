@@ -474,7 +474,7 @@ Expected Output on the client:
 [MANUALLY FETCHED MESSAGE] {'action': 'receive_message', 'data': {'sender': 'test_user', 'message': 'Hello, Alice!'}}
 [SERVER RESPONSE] {'action': 'send_message', 'status': 'success'}
 [SERVER RESPONSE] {'action': 'login', 'status': 'success', 'data': {'session_token': '210f31fd-cdcd-4dd9-beb8-1ffd167ebd12', 'unread_message_count': 1}}
-[SERVER RESPONSE] {'action': 'read_messages', 'status': 'success', 'data': {'unread_messages': [{'from': 'test_user', 'message': 'Hello, Bob!'}]}}
+[SERVER RESPONSE] {'action': 'read_messages', 'status': 'success', 'data': {'unread_messages': [{"sender": 'test_user', 'message': 'Hello, Bob!'}]}}
 [SERVER RESPONSE] {'action': 'send_message', 'status': 'error', 'error': 'Recipient does not exist'}
 [SERVER RESPONSE] {'action': 'send_message', 'status': 'error', 'error': 'Invalid session'}
 [SERVER RESPONSE] {'action': 'read_messages', 'status': 'error', 'error': 'Invalid session'}
@@ -695,7 +695,7 @@ Expected Output on the client:
 
 [SERVER RESPONSE TO ('127.0.0.1', 57471)] {'action': 'delete_messages', 'status': 'success', 'data': {'num_messages_deleted': 1}}
 
-[SERVER RESPONSE TO ('127.0.0.1', 57472)] {'action': 'read_messages', 'status': 'success', 'data': {'unread_messages': [{'from': 'alice', 'message': 'The second day missing bob.'}], 'remaining_unread_count': 0}}
+[SERVER RESPONSE TO ('127.0.0.1', 57472)] {'action': 'read_messages', 'status': 'success', 'data': {'unread_messages': [{"sender": 'alice', 'message': 'The second day missing bob.'}], 'remaining_unread_count': 0}}
 
 [SERVER RESPONSE TO ('127.0.0.1', 57473)] {'action': 'create_account', 'status': 'error', 'error': 'Username already exists'}
 

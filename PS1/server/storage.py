@@ -364,7 +364,7 @@ class DatabaseStorage(Storage):
     def add_message(self, recipient: str, message: dict):
         with self.lock:
             cursor = self.conn.cursor()
-            sender = message.get("from")
+            sender = message.get("sender")
             msg_text = message.get("message")
             cursor.execute("INSERT INTO messages (recipient, sender, message) VALUES (?,?,?)", (recipient, sender, msg_text))
             self.conn.commit()
@@ -379,7 +379,7 @@ class DatabaseStorage(Storage):
                 # Retrieve latest messages
                 cursor.execute("SELECT id, sender, message FROM messages WHERE recipient=? ORDER BY id DESC LIMIT ?", (username, num_to_read))
             rows = cursor.fetchall()
-            msgs = [{"from": row["sender"], "message": row["message"]} for row in rows]
+            msgs = [{"sender": row["sender"], "message": row["message"]} for row in rows]
             if rows:
                 ids = [str(row["id"]) for row in rows]
                 query = "DELETE FROM messages WHERE id IN (" + ",".join("?" for _ in ids) + ")"

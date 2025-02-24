@@ -244,7 +244,7 @@ class ChatClient:
         if response.get("status") == "success":
             unread_messages = response.get("data", {}).get("unread_messages")
             if unread_messages:
-                self.display_messages([f"{msg['sender']} -> You: {msg['message']}\n" for msg in unread_messages], append=True)
+                self.display_messages([f"{msg["sender"]} -> You: {msg['message']}\n" for msg in unread_messages], append=True)
             else:
                 messagebox.showinfo("No Messages", "No new messages.")
         else:

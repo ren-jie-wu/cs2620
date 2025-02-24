@@ -88,18 +88,18 @@ class TestMemoryStorage(unittest.TestCase):
         It tests adding multiple messages, retrieving the latest message, retrieving multiple messages from the latest, retrieving multiple messages from the earliest, and the remaining message count.
         """
         self.storage.create_account("bob", "password")
-        self.storage.add_message("bob", {"from": "alice", "message": "Hello Bob!"})
-        self.storage.add_message("bob", {"from": "alice", "message": "How are you?"})
+        self.storage.add_message("bob", {"sender": "alice", "message": "Hello Bob!"})
+        self.storage.add_message("bob", {"sender": "alice", "message": "How are you?"})
         messages, remaining = self.storage.get_and_clear_messages("bob", 1)
 
         self.assertEqual(len(messages), 1)
-        self.assertEqual(messages[0]["from"], "alice")
+        self.assertEqual(messages[0]["sender"], "alice")
         self.assertEqual(messages[0]["message"], "How are you?")
         self.assertEqual(remaining, 1)
 
-        self.storage.add_message("bob", {"from": "alice", "message": "How are you?"})
-        self.storage.add_message("bob", {"from": "alice", "message": "I'm good, thanks!"})
-        self.storage.add_message("bob", {"from": "alice", "message": "How about you?"})
+        self.storage.add_message("bob", {"sender": "alice", "message": "How are you?"})
+        self.storage.add_message("bob", {"sender": "alice", "message": "I'm good, thanks!"})
+        self.storage.add_message("bob", {"sender": "alice", "message": "How about you?"})
 
         messages, remaining = self.storage.get_and_clear_messages("bob", -2)
         self.assertEqual(len(messages), 2)
@@ -114,10 +114,10 @@ class TestMemoryStorage(unittest.TestCase):
         It tests deleting two messages, deleting messages from the earliest, and deleting messages from the latest.
         """
         self.storage.create_account("bob", "password")
-        self.storage.add_message("bob", {"from": "alice", "message": "Hello Bob!"})
-        self.storage.add_message("bob", {"from": "alice", "message": "How are you?"})
-        self.storage.add_message("bob", {"from": "alice", "message": "I'm good, thanks!"})
-        self.storage.add_message("bob", {"from": "alice", "message": "How about you?"})
+        self.storage.add_message("bob", {"sender": "alice", "message": "Hello Bob!"})
+        self.storage.add_message("bob", {"sender": "alice", "message": "How are you?"})
+        self.storage.add_message("bob", {"sender": "alice", "message": "I'm good, thanks!"})
+        self.storage.add_message("bob", {"sender": "alice", "message": "How about you?"})
 
         count = self.storage.delete_messages("bob", 2)
         self.assertEqual(count, 2)

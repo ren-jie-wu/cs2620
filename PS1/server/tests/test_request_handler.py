@@ -150,7 +150,7 @@ class TestRequestHandler(unittest.TestCase):
         response = self.handler.process_request(request, None)
 
         self.assertEqual(response["status"], "success")
-        self.mock_storage.add_message.assert_called_once_with("bob", {"from": "alice", "message": "Hello Bob!"})
+        self.mock_storage.add_message.assert_called_once_with("bob", {"sender": "alice", "message": "Hello Bob!"})
     
     def test_send_message_invalid_data(self):
         """Test sending a message with missing recipient, missing message, or invalid recipient."""
@@ -201,7 +201,7 @@ class TestRequestHandler(unittest.TestCase):
     def test_read_messages_success(self):
         """Test reading messages successfully."""
         self.mock_storage.validate_session.return_value = "alice"
-        self.mock_storage.get_and_clear_messages.return_value = ([{"from": "bob", "message": "Hey!"}], 0)
+        self.mock_storage.get_and_clear_messages.return_value = ([{"sender": "bob", "message": "Hey!"}], 0)
 
         request = {"action": "read_messages", "data": {"session_token": "valid_token", "num_to_read": 1}}
         response = self.handler.process_request(request, None)

@@ -105,7 +105,7 @@ class RequestHandler:
                     except Exception:
                         continue
             if not delivered:
-                self.storage.add_message(recipient, {"from": sender, "message": message})
+                self.storage.add_message(recipient, {"sender": sender, "message": message})
             return {"action": "send_message", "status": "success"}
 
         elif action == "read_messages":
